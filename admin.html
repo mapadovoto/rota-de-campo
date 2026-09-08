@@ -5,6 +5,52 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="style.css">
 <title>Administrador — Rota de Campo</title>
+
+<style>
+.status-badge{
+display:inline-block;
+padding:5px 9px;
+border-radius:999px;
+font-size:.82rem;
+font-weight:700;
+margin:5px 0;
+}
+.status-active{
+background:#dcfce7;
+color:#166534;
+}
+.status-finished{
+background:#e5e7eb;
+color:#374151;
+}
+.operation-actions{
+margin-top:12px;
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+}
+.btn-finish{
+background:#167447;
+}
+.btn-clear{
+background:#b45309;
+}
+.btn-delete{
+background:#a72a2a;
+}
+.management{
+margin-top:22px;
+padding-top:18px;
+border-top:2px solid #e5e9f0;
+}
+.warning-box{
+background:#fff7ed;
+border:1px solid #fed7aa;
+border-radius:10px;
+padding:12px;
+margin-top:12px;
+}
+</style>
 </head>
 
 <body>
@@ -52,7 +98,7 @@ Data da operação
 <h2>Operações salvas</h2>
 
 <p class="muted">
-Clique em uma operação para voltar a administrá-la.
+Operações em andamento e histórico de operações finalizadas.
 </p>
 
 <div id="operations">
@@ -67,6 +113,8 @@ Carregando operações...
 <div class="card" id="opbox" hidden>
 
 <h2 id="opname"></h2>
+
+<div id="opstatus"></div>
 
 <p>
 <strong>Data:</strong>
@@ -104,6 +152,8 @@ Abrir mapa público
 
 <h3>Pessoas / Panfleteiros</h3>
 
+<div id="addPersonArea">
+
 <div class="row">
 
 <input id="personname"
@@ -115,11 +165,61 @@ Adicionar pessoa
 
 </div>
 
+</div>
+
 <div id="summary"
 style="margin-top:20px">
 </div>
 
 <div id="people"></div>
+
+
+<!-- CONTROLE DA OPERAÇÃO -->
+
+<div class="management">
+
+<h3>Controle da operação</h3>
+
+<p class="muted">
+Use estas opções somente quando necessário.
+</p>
+
+<div class="operation-actions">
+
+<button
+id="finishOperation"
+class="btn-finish">
+Finalizar operação
+</button>
+
+<button
+id="clearRoutes"
+class="btn-clear">
+Limpar percursos
+</button>
+
+<button
+id="deleteOperation"
+class="btn-delete">
+Excluir operação definitivamente
+</button>
+
+</div>
+
+<div class="warning-box">
+
+<strong>Atenção:</strong><br>
+
+Finalizar mantém todo o histórico.<br>
+
+Limpar percursos apaga os registros GPS,
+mas mantém a operação e as pessoas.<br>
+
+Excluir definitivamente apaga toda a operação.
+
+</div>
+
+</div>
 
 </div>
 
@@ -150,9 +250,9 @@ const operationsBox =
 document.querySelector('#operations');
 
 
-/* ================================================
-   CORES DAS PESSOAS
-================================================ */
+/* =====================================================
+   CORES
+===================================================== */
 
 const COLORS = [
 '#2563eb',
@@ -182,9 +282,9 @@ return COLORS[index % COLORS.length];
 }
 
 
-/* ================================================
+/* =====================================================
    DATA
-================================================ */
+===================================================== */
 
 function formatDate(date){
 
@@ -204,9 +304,9 @@ document.querySelector('#operation_date').value =
 today;
 
 
-/* ================================================
+/* =====================================================
    CRIAR OPERAÇÃO
-================================================ */
+===================================================== */
 
 document.querySelector('#create').onclick =
 async()=>{
@@ -279,7 +379,6 @@ return;
 msg.innerHTML =
 '<span class="ok">Operação criada.</span>';
 
-
 nameEl.value = '';
 clientEl.value = '';
 areaEl.value = '';
@@ -291,9 +390,9 @@ await openOperation(data.id);
 };
 
 
-/* ================================================
-   CARREGAR HISTÓRICO DE OPERAÇÕES
-================================================ */
+/* =====================================================
+   HISTÓRICO
+===================================================== */
 
 async function loadOperations(){
 
@@ -325,7 +424,7 @@ return;
 }
 
 
-if(!data || data.length === 0){
+if(!data || !data.length){
 
 operationsBox.innerHTML =
 '<p class="muted">Nenhuma operação cadastrada.</p>';
@@ -334,8 +433,6 @@ return;
 
 }
 
-
-/* BUSCA QUANTAS PESSOAS EXISTEM */
 
 const {data:teamData} =
 await sb
@@ -355,10 +452,15 @@ p.operation_id === operation.id &&
 p.active !== false
 );
 
+
 const publicLink =
 base()+
 'public.html?t='+
 operation.public_token;
+
+
+const finished =
+operation.status === 'finished';
 
 
 const div =
@@ -368,9 +470,13 @@ div.className = 'team';
 
 div.innerHTML = `
 
-<h3 style="margin-bottom:5px">
+<h3 style="margin-bottom:4px">
 ${esc(operation.name)}
 </h3>
+
+<span class="status-badge ${finished ? 'status-finished' : 'status-active'}">
+${finished ? 'FINALIZADA' : 'EM ANDAMENTO'}
+</span>
 
 <div>
 <strong>Data:</strong>
@@ -392,31 +498,24 @@ ${esc(operation.area_name || '-')}
 ${operationPeople.length}
 </div>
 
-<div style="margin-top:12px"
-class="row">
+<div class="operation-actions">
 
 <button
 class="openOperation"
 data-id="${esc(operation.id)}">
-
 Abrir / Gerenciar
-
 </button>
 
 <button
 class="secondary openMap"
 data-link="${esc(publicLink)}">
-
 Abrir mapa
-
 </button>
 
 <button
 class="secondary copyOperation"
 data-link="${esc(publicLink)}">
-
 Copiar link público
-
 </button>
 
 </div>
@@ -430,14 +529,13 @@ operationsBox.appendChild(div);
 }
 
 
-/* ================================================
+/* =====================================================
    BOTÕES DO HISTÓRICO
-================================================ */
+===================================================== */
 
 operationsBox.addEventListener(
 'click',
 async e=>{
-
 
 if(
 e.target.classList.contains('openOperation')
@@ -477,9 +575,9 @@ alert('Link público copiado.');
 });
 
 
-/* ================================================
-   ABRIR OPERAÇÃO EXISTENTE
-================================================ */
+/* =====================================================
+   ABRIR OPERAÇÃO
+===================================================== */
 
 async function openOperation(id){
 
@@ -534,6 +632,34 @@ base()+
 data.public_token;
 
 
+const finished =
+data.status === 'finished';
+
+
+document.querySelector('#opstatus')
+.innerHTML = `
+
+<span class="status-badge ${finished ? 'status-finished' : 'status-active'}">
+
+${finished ? 'FINALIZADA' : 'EM ANDAMENTO'}
+
+</span>
+
+`;
+
+
+/* Não adicionamos pessoas em operação finalizada */
+
+document.querySelector('#addPersonArea')
+.style.display =
+finished ? 'none' : 'block';
+
+
+document.querySelector('#finishOperation')
+.style.display =
+finished ? 'none' : 'inline-block';
+
+
 await loadPeople();
 
 
@@ -545,9 +671,9 @@ block:'start'
 }
 
 
-/* ================================================
-   CARREGAR PESSOAS DA OPERAÇÃO
-================================================ */
+/* =====================================================
+   CARREGAR PESSOAS
+===================================================== */
 
 async function loadPeople(){
 
@@ -591,9 +717,9 @@ renderSummary();
 }
 
 
-/* ================================================
+/* =====================================================
    ADICIONAR PESSOA
-================================================ */
+===================================================== */
 
 document.querySelector('#addperson')
 .onclick =
@@ -603,12 +729,22 @@ if(!op)
 return;
 
 
+if(op.status === 'finished'){
+
+alert(
+'Esta operação já foi finalizada.'
+);
+
+return;
+
+}
+
+
 const input =
 document.querySelector('#personname');
 
 const n =
 input.value.trim();
-
 
 if(!n)
 return;
@@ -683,9 +819,9 @@ await loadOperations();
 };
 
 
-/* ================================================
+/* =====================================================
    MOSTRAR PESSOA
-================================================ */
+===================================================== */
 
 function renderPerson(data){
 
@@ -703,6 +839,22 @@ div.className =
 
 div.dataset.id =
 data.id;
+
+
+const removeButton =
+op &&
+op.status !== 'finished'
+? `
+
+<button
+class="secondary remove"
+data-id="${esc(data.id)}"
+data-name="${esc(data.name)}">
+Remover pessoa
+</button>
+
+`
+: '';
 
 
 div.innerHTML = `
@@ -736,19 +888,10 @@ ${esc(link)}
 <button
 class="secondary copy"
 data-link="${esc(link)}">
-
 Copiar link individual
-
 </button>
 
-<button
-class="secondary remove"
-data-id="${esc(data.id)}"
-data-name="${esc(data.name)}">
-
-Remover pessoa
-
-</button>
+${removeButton}
 
 `;
 
@@ -757,9 +900,9 @@ people.appendChild(div);
 }
 
 
-/* ================================================
-   BOTÕES DAS PESSOAS
-================================================ */
+/* =====================================================
+   PESSOAS: COPIAR / REMOVER
+===================================================== */
 
 people.addEventListener(
 'click',
@@ -779,8 +922,6 @@ alert('Link individual copiado.');
 }
 
 
-/* REMOÇÃO SEM APAGAR HISTÓRICO */
-
 if(
 e.target.classList.contains('remove')
 ){
@@ -796,7 +937,7 @@ const ok =
 confirm(
 'Remover '+personName+
 ' desta operação?\n\n'+
-'O histórico de percurso já realizado será preservado.'
+'O percurso já realizado será preservado.'
 );
 
 
@@ -831,9 +972,9 @@ await loadOperations();
 });
 
 
-/* ================================================
+/* =====================================================
    LINK PÚBLICO
-================================================ */
+===================================================== */
 
 document.querySelector('#copyPublic')
 .onclick =
@@ -862,9 +1003,224 @@ document.querySelector('#publink')
 };
 
 
-/* ================================================
+/* =====================================================
+   FINALIZAR OPERAÇÃO
+===================================================== */
+
+document.querySelector('#finishOperation')
+.onclick =
+async()=>{
+
+if(!op)
+return;
+
+
+const ok =
+confirm(
+'FINALIZAR ESTA OPERAÇÃO?\n\n'+
+'Os percursos serão preservados.\n'+
+'Qualquer percurso ainda ativo será encerrado.\n\n'+
+'Esta operação ficará registrada no histórico.'
+);
+
+
+if(!ok)
+return;
+
+
+const {error} =
+await sb.rpc(
+'finish_operation',
+{
+p_operation:op.id
+}
+);
+
+
+if(error){
+
+alert(error.message);
+
+return;
+
+}
+
+
+alert(
+'Operação finalizada com sucesso.'
+);
+
+
+await loadOperations();
+
+await openOperation(op.id);
+
+};
+
+
+/* =====================================================
+   LIMPAR PERCURSOS
+===================================================== */
+
+document.querySelector('#clearRoutes')
+.onclick =
+async()=>{
+
+if(!op)
+return;
+
+
+const first =
+confirm(
+'ATENÇÃO!\n\n'+
+'Isto apagará TODOS os percursos GPS desta operação.\n\n'+
+'A operação e as pessoas continuarão cadastradas.\n\n'+
+'Deseja continuar?'
+);
+
+
+if(!first)
+return;
+
+
+const typed =
+prompt(
+'Para confirmar, digite exatamente:\n\nLIMPAR'
+);
+
+
+if(typed !== 'LIMPAR'){
+
+alert(
+'Confirmação incorreta. Nada foi apagado.'
+);
+
+return;
+
+}
+
+
+const {error} =
+await sb.rpc(
+'clear_operation_routes',
+{
+p_operation:op.id
+}
+);
+
+
+if(error){
+
+alert(error.message);
+
+return;
+
+}
+
+
+alert(
+'Percursos apagados. A operação e as pessoas foram mantidas.'
+);
+
+
+await loadOperations();
+
+await openOperation(op.id);
+
+};
+
+
+/* =====================================================
+   EXCLUIR OPERAÇÃO DEFINITIVAMENTE
+===================================================== */
+
+document.querySelector('#deleteOperation')
+.onclick =
+async()=>{
+
+if(!op)
+return;
+
+
+const operationName =
+op.name;
+
+
+const first =
+confirm(
+'EXCLUIR DEFINITIVAMENTE "'+
+operationName+
+'"?\n\n'+
+'Serão apagados:\n'+
+'- a operação\n'+
+'- as pessoas\n'+
+'- todas as sessões\n'+
+'- todos os pontos GPS\n\n'+
+'ESTA AÇÃO NÃO PODE SER DESFEITA.'
+);
+
+
+if(!first)
+return;
+
+
+const typed =
+prompt(
+'Para confirmar a exclusão definitiva,\n'+
+'digite exatamente:\n\nEXCLUIR'
+);
+
+
+if(typed !== 'EXCLUIR'){
+
+alert(
+'Confirmação incorreta. Nada foi excluído.'
+);
+
+return;
+
+}
+
+
+const operationId =
+op.id;
+
+
+const {error} =
+await sb.rpc(
+'delete_operation',
+{
+p_operation:operationId
+}
+);
+
+
+if(error){
+
+alert(error.message);
+
+return;
+
+}
+
+
+alert(
+'Operação excluída definitivamente.'
+);
+
+
+op = null;
+
+box.hidden = true;
+
+await loadOperations();
+
+};
+
+
+/* =====================================================
    RESUMO
-================================================ */
+===================================================== */
 
 function renderSummary(){
 
@@ -894,9 +1250,9 @@ Pessoas cadastradas:
 }
 
 
-/* ================================================
+/* =====================================================
    INICIALIZAÇÃO
-================================================ */
+===================================================== */
 
 loadOperations();
 
