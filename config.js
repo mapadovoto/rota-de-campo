@@ -1,4 +1,4 @@
 window.ROTA_CONFIG = {
-  SUPABASE_URL: 'sb_publishable_EvybY864AmAPqt_6V1eemQ_lQknCvWZ',
+  SUPABASE_URL: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiYnBvaHZldGduaXd5bW5ueWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDQzOTMsImV4cCI6MjEwNDEyMDM5M30.Ca0IWTa3g30TEVqUt36qot6gMUV6xvxxcC6a9k0Z7w8',
   SUPABASE_KEY: 'sb_publishable_nqJwgR7qn8hF5dV9hjf3SQ_NkgAQL-h'
 };
