@@ -1,6 +1,814 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><title>Acompanhamento — Rota de Campo</title></head><body><header><h1>Acompanhamento em tempo real</h1></header><main><div class="card"><div id="head">Carregando…</div></div><div id="map" class="map"></div><div class="card"><h3>Equipes</h3><div id="legend"></div><p class="muted">Atualização automática a cada 10 segundos. O mapa representa trajetos GPS registrados e não comprova, isoladamente, entrega em cada residência.</p></div></main>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script><script>
-const pub=qs('t'); let map=L.map('map').setView([-31.77,-52.34],12), layers={}; L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-async function refresh(){const {data,error}=await sb.rpc('get_public_operation',{p_token:pub}); if(error||!data){head.innerHTML='<span class="err">Operação não encontrada.</span>';return;} head.innerHTML=`<h2>${esc(data.operation.name)}</h2><p>${esc(data.operation.client_name||'')} · ${esc(data.operation.area_name||'')}</p><span class="pill">${data.teams.length} equipe(s)</span>`; let bounds=[]; legend.innerHTML=''; for(const team of data.teams){const pts=team.points.map(p=>[p.lat,p.lng]); if(!layers[team.id]) layers[team.id]={line:L.polyline([],{}).addTo(map),marker:null}; layers[team.id].line.setLatLngs(pts); if(pts.length){const last=pts[pts.length-1]; if(!layers[team.id].marker) layers[team.id].marker=L.marker(last).addTo(map).bindTooltip(team.name); else layers[team.id].marker.setLatLng(last); bounds.push(...pts);} let dist=0; for(let i=1;i<team.points.length;i++)dist+=hav(team.points[i-1],team.points[i]); legend.insertAdjacentHTML('beforeend',`<div class="team"><b>${esc(team.name)}</b> · ${fmtKm(dist)} · ${team.active?'🟢 em campo':'⚪ sem sessão ativa'}</div>`);} if(bounds.length&&!map._fitted){map.fitBounds(bounds,{padding:[25,25]});map._fitted=true;}}
-refresh();setInterval(refresh,10000);
-</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<title>Acompanhamento — Rota de Campo</title>
+
+<style>
+
+.dashboard{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:10px;
+margin-top:15px;
+}
+
+.stat{
+background:#f5f7fb;
+border:1px solid #dde3ec;
+border-radius:10px;
+padding:12px;
+}
+
+.stat strong{
+display:block;
+font-size:1.3rem;
+margin-top:3px;
+}
+
+.person-public{
+padding:14px 0;
+border-top:1px solid #e5e9f0;
+}
+
+.person-public:first-child{
+border-top:0;
+}
+
+.person-title{
+display:flex;
+align-items:center;
+gap:9px;
+font-size:1.05rem;
+}
+
+.color-dot{
+width:16px;
+height:16px;
+border-radius:50%;
+display:inline-block;
+flex:0 0 16px;
+}
+
+.status-active{
+color:#167447;
+font-weight:700;
+}
+
+.status-ended{
+color:#475467;
+font-weight:700;
+}
+
+.status-waiting{
+color:#667085;
+font-weight:700;
+}
+
+.person-details{
+margin-top:7px;
+line-height:1.6;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+<h1>Acompanhamento em tempo real</h1>
+</header>
+
+<main>
+
+<div class="card">
+
+<div id="head">
+Carregando operação...
+</div>
+
+<div id="generalSummary"></div>
+
+</div>
+
+
+<div id="map" class="map"></div>
+
+
+<div class="card">
+
+<h2>Pessoas / Panfleteiros</h2>
+
+<div id="legend">
+Carregando...
+</div>
+
+<p class="muted">
+Atualização automática a cada 10 segundos.
+Os trajetos representam os pontos GPS registrados
+pelo aparelho durante o percurso.
+</p>
+
+</div>
+
+</main>
+
+
+<script
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script
+src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+
+<script>
+
+/* =====================================================
+   CONFIGURAÇÃO
+===================================================== */
+
+const pub = qs('t');
+
+let map =
+L.map('map')
+.setView([-31.77,-52.34],12);
+
+let layers = {};
+
+let firstFit = true;
+
+
+/* =====================================================
+   MAPA
+===================================================== */
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+maxZoom:19,
+attribution:'&copy; OpenStreetMap contributors'
+}
+).addTo(map);
+
+
+/* =====================================================
+   DATA
+===================================================== */
+
+function formatDate(date){
+
+if(!date)
+return '-';
+
+return new Date(
+date + 'T00:00:00'
+).toLocaleDateString('pt-BR');
+
+}
+
+
+/* =====================================================
+   HORÁRIO
+===================================================== */
+
+function formatTime(value){
+
+if(!value)
+return '-';
+
+return new Date(value)
+.toLocaleTimeString(
+'pt-BR',
+{
+hour:'2-digit',
+minute:'2-digit'
+}
+);
+
+}
+
+
+/* =====================================================
+   DURAÇÃO
+===================================================== */
+
+function formatDuration(start,end){
+
+if(!start)
+return '-';
+
+const a =
+new Date(start);
+
+const b =
+end
+? new Date(end)
+: new Date();
+
+let minutes =
+Math.max(
+0,
+Math.floor(
+(b-a)/60000
+)
+);
+
+const hours =
+Math.floor(minutes/60);
+
+minutes =
+minutes % 60;
+
+if(hours > 0){
+
+return hours+'h '+
+String(minutes).padStart(2,'0')+
+'min';
+
+}
+
+return minutes+' min';
+
+}
+
+
+/* =====================================================
+   DISTÂNCIA POR SESSÃO
+===================================================== */
+
+function calculateTeamDistance(team){
+
+if(!team.points ||
+team.points.length < 2)
+return 0;
+
+let total = 0;
+
+
+/*
+Agrupamos os pontos por sessão.
+
+Isso evita criar uma distância falsa
+entre o final de uma sessão e o começo
+de outra.
+*/
+
+const sessions = {};
+
+team.points.forEach(p=>{
+
+const sid =
+p.session_id || 'unknown';
+
+if(!sessions[sid])
+sessions[sid] = [];
+
+sessions[sid].push(p);
+
+});
+
+
+Object.values(sessions)
+.forEach(points=>{
+
+for(
+let i=1;
+i<points.length;
+i++
+){
+
+total +=
+hav(
+points[i-1],
+points[i]
+);
+
+}
+
+});
+
+
+return total;
+
+}
+
+
+/* =====================================================
+   DESENHAR TRAJETOS
+===================================================== */
+
+function drawTeam(team){
+
+const color =
+team.color ||
+'#2563eb';
+
+
+/* Remove desenho anterior */
+
+if(layers[team.id]){
+
+layers[team.id]
+.forEach(layer=>{
+map.removeLayer(layer);
+});
+
+}
+
+
+layers[team.id] = [];
+
+
+/* Agrupar pontos por sessão */
+
+const sessionPoints = {};
+
+(team.points || [])
+.forEach(p=>{
+
+const sid =
+p.session_id || 'unknown';
+
+if(!sessionPoints[sid])
+sessionPoints[sid] = [];
+
+sessionPoints[sid].push(p);
+
+});
+
+
+let lastPoint = null;
+
+
+/* Uma linha para cada sessão */
+
+Object.values(sessionPoints)
+.forEach(points=>{
+
+if(!points.length)
+return;
+
+const latlngs =
+points.map(
+p=>[p.lat,p.lng]
+);
+
+
+const line =
+L.polyline(
+latlngs,
+{
+color:color,
+weight:5,
+opacity:0.85
+}
+).addTo(map);
+
+
+layers[team.id]
+.push(line);
+
+
+lastPoint =
+latlngs[
+latlngs.length-1
+];
+
+});
+
+
+/* Marcador da posição mais recente */
+
+if(lastPoint){
+
+const marker =
+L.circleMarker(
+lastPoint,
+{
+radius:8,
+color:color,
+fillColor:color,
+fillOpacity:1,
+weight:3
+}
+)
+.addTo(map)
+.bindTooltip(
+team.name
+);
+
+
+layers[team.id]
+.push(marker);
+
+}
+
+}
+
+
+/* =====================================================
+   ÚLTIMA SESSÃO
+===================================================== */
+
+function getLastSession(team){
+
+if(!team.sessions ||
+!team.sessions.length)
+return null;
+
+return team.sessions[
+team.sessions.length-1
+];
+
+}
+
+
+/* =====================================================
+   ATUALIZAÇÃO
+===================================================== */
+
+async function refresh(){
+
+const {data,error} =
+await sb.rpc(
+'get_public_operation',
+{
+p_token:pub
+}
+);
+
+
+if(error || !data){
+
+document.querySelector('#head')
+.innerHTML =
+'<span class="err">'+
+'Operação não encontrada.'+
+'</span>';
+
+return;
+
+}
+
+
+const operation =
+data.operation;
+
+const teams =
+data.teams || [];
+
+
+/* =====================================================
+   CABEÇALHO
+===================================================== */
+
+document.querySelector('#head')
+.innerHTML = `
+
+<h2>
+${esc(operation.name)}
+</h2>
+
+<p>
+
+<strong>Data:</strong>
+${formatDate(operation.operation_date)}
+
+&nbsp; · &nbsp;
+
+<strong>Contratante:</strong>
+${esc(operation.client_name || '-')}
+
+&nbsp; · &nbsp;
+
+<strong>Área:</strong>
+${esc(operation.area_name || '-')}
+
+</p>
+
+`;
+
+
+/* =====================================================
+   ESTATÍSTICAS
+===================================================== */
+
+let totalDistance = 0;
+
+let activeCount = 0;
+
+let endedCount = 0;
+
+let waitingCount = 0;
+
+let startedCount = 0;
+
+
+teams.forEach(team=>{
+
+const distance =
+calculateTeamDistance(team);
+
+totalDistance +=
+distance;
+
+
+if(team.active){
+
+activeCount++;
+
+startedCount++;
+
+}
+else if(
+team.started_at
+){
+
+endedCount++;
+
+startedCount++;
+
+}
+else{
+
+waitingCount++;
+
+}
+
+});
+
+
+document.querySelector('#generalSummary')
+.innerHTML = `
+
+<div class="dashboard">
+
+<div class="stat">
+Pessoas
+<strong>
+${teams.length}
+</strong>
+</div>
+
+<div class="stat">
+Iniciaram
+<strong>
+${startedCount}
+</strong>
+</div>
+
+<div class="stat">
+Em campo
+<strong>
+${activeCount}
+</strong>
+</div>
+
+<div class="stat">
+Encerraram
+<strong>
+${endedCount}
+</strong>
+</div>
+
+<div class="stat">
+Aguardando
+<strong>
+${waitingCount}
+</strong>
+</div>
+
+<div class="stat">
+Distância total
+<strong>
+${fmtKm(totalDistance)}
+</strong>
+</div>
+
+</div>
+
+`;
+
+
+/* =====================================================
+   LISTA DE PESSOAS
+===================================================== */
+
+const legend =
+document.querySelector('#legend');
+
+legend.innerHTML = '';
+
+
+if(!teams.length){
+
+legend.innerHTML =
+'<p class="muted">'+
+'Nenhuma pessoa cadastrada.'+
+'</p>';
+
+}
+
+
+teams.forEach(team=>{
+
+const distance =
+calculateTeamDistance(team);
+
+const lastSession =
+getLastSession(team);
+
+
+let statusText =
+'AGUARDANDO INÍCIO';
+
+let statusClass =
+'status-waiting';
+
+
+if(team.active){
+
+statusText =
+'🟢 EM CAMPO';
+
+statusClass =
+'status-active';
+
+}
+else if(team.started_at){
+
+statusText =
+'✓ ENCERRADO';
+
+statusClass =
+'status-ended';
+
+}
+
+
+let startTime = '-';
+
+let endTime = '-';
+
+let duration = '-';
+
+
+if(lastSession){
+
+startTime =
+formatTime(
+lastSession.started_at
+);
+
+
+if(lastSession.ended_at){
+
+endTime =
+formatTime(
+lastSession.ended_at
+);
+
+}
+
+
+duration =
+formatDuration(
+lastSession.started_at,
+lastSession.ended_at
+);
+
+}
+
+
+const div =
+document.createElement('div');
+
+div.className =
+'person-public';
+
+
+div.innerHTML = `
+
+<div class="person-title">
+
+<span
+class="color-dot"
+style="background:${esc(team.color || '#2563eb')}">
+</span>
+
+<strong>
+${esc(team.name)}
+</strong>
+
+<span
+class="${statusClass}">
+${statusText}
+</span>
+
+</div>
+
+
+<div class="person-details">
+
+<strong>Distância:</strong>
+${fmtKm(distance)}
+
+&nbsp; | &nbsp;
+
+<strong>Início:</strong>
+${startTime}
+
+&nbsp; | &nbsp;
+
+<strong>Fim:</strong>
+${endTime}
+
+&nbsp; | &nbsp;
+
+<strong>Tempo:</strong>
+${duration}
+
+</div>
+
+`;
+
+
+legend.appendChild(div);
+
+
+/* DESENHAR NO MAPA */
+
+drawTeam(team);
+
+});
+
+
+/* =====================================================
+   AJUSTAR MAPA NA PRIMEIRA CARGA COM GPS
+===================================================== */
+
+if(firstFit){
+
+const allPoints = [];
+
+teams.forEach(team=>{
+
+(team.points || [])
+.forEach(p=>{
+
+allPoints.push(
+[p.lat,p.lng]
+);
+
+});
+
+});
+
+
+if(allPoints.length){
+
+map.fitBounds(
+allPoints,
+{
+padding:[30,30],
+maxZoom:17
+}
+);
+
+firstFit = false;
+
+}
+
+}
+
+}
+
+
+/* =====================================================
+   INICIAR
+===================================================== */
+
+refresh();
+
+setInterval(
+refresh,
+10000
+);
+
+</script>
+
+</body>
+</html>
