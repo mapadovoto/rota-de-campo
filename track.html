@@ -1,8 +1,838 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><title>Equipe — Rota de Campo</title></head><body><header><h1>Rota de Campo — Equipe</h1></header><main><div class="card"><div id="info">Carregando equipe…</div><p class="muted">A localização só será registrada depois de tocar em INICIAR e será interrompida ao ENCERRAR.</p><button id="start" class="big success" disabled>INICIAR PERCURSO</button><p><button id="stop" class="big danger" disabled>ENCERRAR PERCURSO</button></p><div id="status"></div></div></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script><script>
-let team=null,session=null,watchId=null,last=null,km=0; const t=qs('t'), info=document.querySelector('#info'), status=document.querySelector('#status');
-(async()=>{const {data,error}=await sb.rpc('get_team_by_token',{p_token:t}); if(error||!data?.length){info.innerHTML='<span class="err">Link de equipe inválido.</span>';return;} team=data[0]; info.innerHTML=`<h2>${esc(team.team_name)}</h2><p>${esc(team.operation_name)} · ${esc(team.area_name||'')}</p>`; start.disabled=false;})();
-start.onclick=async()=>{ if(!navigator.geolocation)return status.textContent='GPS não disponível neste aparelho.'; const {data,error}=await sb.rpc('start_tracking_session',{p_token:t}); if(error)return status.textContent=error.message; session=data; start.disabled=true; stop.disabled=false; status.innerHTML='<span class="ok">GPS ativo. Mantenha esta página aberta durante o percurso.</span>'; watchId=navigator.geolocation.watchPosition(savePos,e=>status.innerHTML='<span class="err">GPS: '+esc(e.message)+'</span>',{enableHighAccuracy:true,maximumAge:5000,timeout:20000}); };
-async function savePos(p){ const cur={lat:p.coords.latitude,lng:p.coords.longitude}; if(last){const d=hav(last,cur); if(d<1)km+=d;} last=cur; status.textContent=`GPS ativo · precisão ±${Math.round(p.coords.accuracy)} m · ${fmtKm(km)}`; const {error}=await sb.rpc('add_track_point',{p_session:session,p_token:t,p_lat:cur.lat,p_lng:cur.lng,p_accuracy:p.coords.accuracy,p_speed:p.coords.speed,p_heading:p.coords.heading}); if(error)status.innerHTML='<span class="err">Falha ao enviar ponto: '+esc(error.message)+'</span>'; }
-stop.onclick=async()=>{if(watchId!==null)navigator.geolocation.clearWatch(watchId); await sb.rpc('stop_tracking_session',{p_session:session,p_token:t}); watchId=null; stop.disabled=true; start.disabled=false; status.innerHTML='<b>Percurso encerrado.</b> Distância aproximada: '+fmtKm(km); session=null;last=null;km=0;};
-</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link rel="stylesheet" href="style.css">
+
+<title>Percurso — Rota de Campo</title>
+
+<style>
+
+.tracking-box{
+margin-top:18px;
+padding:16px;
+border-radius:12px;
+background:#f5f7fb;
+border:1px solid #dde3ec;
+}
+
+.tracking-active{
+background:#ecfdf3;
+border-color:#86efac;
+}
+
+.tracking-warning{
+background:#fff7ed;
+border-color:#fed7aa;
+}
+
+.status-title{
+font-size:1.15rem;
+font-weight:800;
+margin-bottom:8px;
+}
+
+.gps-info{
+font-size:1.05rem;
+line-height:1.7;
+}
+
+.big-gap{
+margin-top:12px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+<h1>Rota de Campo — Percurso</h1>
+</header>
+
+<main>
+
+<div class="card">
+
+<div id="info">
+Carregando...
+</div>
+
+<p class="muted">
+Sua localização somente é registrada durante um percurso iniciado por você.
+</p>
+
+
+<div id="sessionNotice"></div>
+
+
+<div id="startArea">
+
+<button
+id="start"
+class="big success"
+disabled>
+INICIAR PERCURSO
+</button>
+
+</div>
+
+
+<div id="activeArea" hidden>
+
+<button
+id="continue"
+class="big success">
+CONTINUAR RASTREAMENTO
+</button>
+
+<p>
+
+<button
+id="stop"
+class="big danger">
+ENCERRAR PERCURSO
+</button>
+
+</p>
+
+</div>
+
+
+<div id="trackingArea" hidden>
+
+<button
+id="stopTracking"
+class="big danger">
+ENCERRAR PERCURSO
+</button>
+
+</div>
+
+
+<div id="status"
+class="tracking-box">
+Aguardando...
+</div>
+
+</div>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+
+/* =====================================================
+   VARIÁVEIS
+===================================================== */
+
+let team = null;
+
+let session = null;
+
+let watchId = null;
+
+let last = null;
+
+let km = 0;
+
+let sending = false;
+
+
+const t = qs('t');
+
+const info =
+document.querySelector('#info');
+
+const status =
+document.querySelector('#status');
+
+const sessionNotice =
+document.querySelector('#sessionNotice');
+
+const startArea =
+document.querySelector('#startArea');
+
+const activeArea =
+document.querySelector('#activeArea');
+
+const trackingArea =
+document.querySelector('#trackingArea');
+
+const startButton =
+document.querySelector('#start');
+
+const continueButton =
+document.querySelector('#continue');
+
+const stopButton =
+document.querySelector('#stop');
+
+const stopTrackingButton =
+document.querySelector('#stopTracking');
+
+
+/* =====================================================
+   HORÁRIO
+===================================================== */
+
+function formatTime(value){
+
+if(!value)
+return '-';
+
+return new Date(value)
+.toLocaleTimeString(
+'pt-BR',
+{
+hour:'2-digit',
+minute:'2-digit'
+}
+);
+
+}
+
+
+/* =====================================================
+   CARREGAR PESSOA
+===================================================== */
+
+async function load(){
+
+const {data,error} =
+await sb.rpc(
+'get_team_by_token',
+{
+p_token:t
+}
+);
+
+
+if(error || !data?.length){
+
+info.innerHTML =
+'<span class="err">'+
+'Link inválido ou pessoa não encontrada.'+
+'</span>';
+
+status.innerHTML =
+'<span class="err">'+
+'Não foi possível carregar este percurso.'+
+'</span>';
+
+return;
+
+}
+
+
+team = data[0];
+
+
+info.innerHTML = `
+
+<h2>
+${esc(team.team_name)}
+</h2>
+
+<p>
+${esc(team.operation_name)}
+${team.area_name
+? ' · '+esc(team.area_name)
+: ''}
+</p>
+
+`;
+
+
+/* VERIFICAR SESSÃO JÁ ABERTA */
+
+const {
+data:activeSession,
+error:sessionError
+} =
+await sb.rpc(
+'get_active_tracking_session',
+{
+p_token:t
+}
+);
+
+
+if(sessionError){
+
+status.innerHTML =
+'<span class="err">'+
+esc(sessionError.message)+
+'</span>';
+
+return;
+
+}
+
+
+if(
+activeSession &&
+activeSession.length
+){
+
+session =
+activeSession[0].session_id;
+
+
+showExistingSession(
+activeSession[0]
+);
+
+}
+else{
+
+showReady();
+
+}
+
+}
+
+
+/* =====================================================
+   PRONTO PARA COMEÇAR
+===================================================== */
+
+function showReady(){
+
+session = null;
+
+startArea.hidden = false;
+
+activeArea.hidden = true;
+
+trackingArea.hidden = true;
+
+startButton.disabled = false;
+
+sessionNotice.innerHTML = '';
+
+status.className =
+'tracking-box';
+
+status.innerHTML = `
+
+<div class="status-title">
+Pronto para iniciar
+</div>
+
+Toque em
+<strong>INICIAR PERCURSO</strong>
+quando começar o trabalho.
+
+`;
+
+}
+
+
+/* =====================================================
+   SESSÃO EXISTENTE
+===================================================== */
+
+function showExistingSession(s){
+
+startArea.hidden = true;
+
+trackingArea.hidden = true;
+
+activeArea.hidden = false;
+
+
+sessionNotice.innerHTML = `
+
+<div class="tracking-box tracking-warning">
+
+<div class="status-title">
+⚠️ PERCURSO EM ANDAMENTO
+</div>
+
+Já existe um percurso iniciado
+para esta pessoa.
+
+<br><br>
+
+<strong>Iniciado às:</strong>
+${formatTime(s.started_at)}
+
+<br><br>
+
+Se você fechou o navegador ou perdeu
+o acesso à página, pode continuar
+o mesmo percurso ou encerrá-lo.
+
+</div>
+
+`;
+
+
+status.className =
+'tracking-box';
+
+status.innerHTML =
+'GPS não está sendo enviado neste momento. Escolha uma opção acima.';
+
+}
+
+
+/* =====================================================
+   INICIAR NOVA SESSÃO
+===================================================== */
+
+startButton.onclick =
+async()=>{
+
+if(!navigator.geolocation){
+
+status.innerHTML =
+'<span class="err">'+
+'GPS não disponível neste aparelho.'+
+'</span>';
+
+return;
+
+}
+
+
+startButton.disabled = true;
+
+
+status.innerHTML =
+'Solicitando acesso ao GPS...';
+
+
+const {data,error} =
+await sb.rpc(
+'start_tracking_session',
+{
+p_token:t
+}
+);
+
+
+if(error){
+
+startButton.disabled = false;
+
+status.innerHTML =
+'<span class="err">'+
+esc(error.message)+
+'</span>';
+
+return;
+
+}
+
+
+session = data;
+
+startGps();
+
+};
+
+
+/* =====================================================
+   CONTINUAR SESSÃO EXISTENTE
+===================================================== */
+
+continueButton.onclick =
+()=>{
+
+if(!navigator.geolocation){
+
+status.innerHTML =
+'<span class="err">'+
+'GPS não disponível neste aparelho.'+
+'</span>';
+
+return;
+
+}
+
+
+startGps();
+
+};
+
+
+/* =====================================================
+   INICIAR GPS
+===================================================== */
+
+function startGps(){
+
+if(!session)
+return;
+
+
+/* Evita dois watchPosition na mesma página */
+
+if(watchId !== null){
+
+navigator.geolocation.clearWatch(
+watchId
+);
+
+}
+
+
+last = null;
+
+km = 0;
+
+
+startArea.hidden = true;
+
+activeArea.hidden = true;
+
+trackingArea.hidden = false;
+
+
+sessionNotice.innerHTML = `
+
+<div class="tracking-box tracking-active">
+
+<div class="status-title">
+🟢 PERCURSO ATIVO
+</div>
+
+O GPS está sendo registrado.
+
+<br>
+
+<strong>
+Não encerre o percurso até terminar o trabalho.
+</strong>
+
+</div>
+
+`;
+
+
+status.className =
+'tracking-box tracking-active';
+
+status.innerHTML =
+'Aguardando localização do GPS...';
+
+
+watchId =
+navigator.geolocation.watchPosition(
+
+savePosition,
+
+gpsError,
+
+{
+enableHighAccuracy:true,
+maximumAge:3000,
+timeout:20000
+}
+
+);
+
+}
+
+
+/* =====================================================
+   SALVAR POSIÇÃO
+===================================================== */
+
+async function savePosition(p){
+
+if(!session)
+return;
+
+
+const cur = {
+
+lat:
+p.coords.latitude,
+
+lng:
+p.coords.longitude
+
+};
+
+
+/*
+Distância exibida apenas nesta execução da página.
+O relatório geral calcula toda a distância pelo banco.
+*/
+
+if(last){
+
+const d =
+hav(last,cur);
+
+if(d < 1){
+
+km += d;
+
+}
+
+}
+
+
+last = cur;
+
+
+status.className =
+'tracking-box tracking-active';
+
+status.innerHTML = `
+
+<div class="gps-info">
+
+<strong>GPS ATIVO</strong>
+
+<br>
+
+Precisão:
+±${Math.round(p.coords.accuracy)} m
+
+<br>
+
+Registrado nesta abertura:
+${fmtKm(km)}
+
+<br>
+
+Última atualização:
+${new Date().toLocaleTimeString('pt-BR')}
+
+</div>
+
+`;
+
+
+/*
+Evita sobreposição de requisições
+se o GPS gerar posições muito rapidamente.
+*/
+
+if(sending)
+return;
+
+sending = true;
+
+
+const {error} =
+await sb.rpc(
+'add_track_point',
+{
+
+p_session:
+session,
+
+p_token:
+t,
+
+p_lat:
+cur.lat,
+
+p_lng:
+cur.lng,
+
+p_accuracy:
+p.coords.accuracy,
+
+p_speed:
+p.coords.speed,
+
+p_heading:
+p.coords.heading
+
+}
+);
+
+
+sending = false;
+
+
+if(error){
+
+status.innerHTML = `
+
+<span class="err">
+
+Falha ao enviar localização:
+
+${esc(error.message)}
+
+</span>
+
+`;
+
+}
+
+}
+
+
+/* =====================================================
+   ERRO GPS
+===================================================== */
+
+function gpsError(e){
+
+status.className =
+'tracking-box tracking-warning';
+
+status.innerHTML = `
+
+<span class="err">
+
+GPS:
+${esc(e.message)}
+
+</span>
+
+<br><br>
+
+Verifique se a localização do celular
+está ativada e se o navegador possui
+permissão para utilizá-la.
+
+`;
+
+}
+
+
+/* =====================================================
+   ENCERRAR
+===================================================== */
+
+async function endSession(){
+
+if(!session)
+return;
+
+
+const ok =
+confirm(
+'Encerrar o percurso agora?\n\n'+
+'Depois de encerrado, este percurso ficará salvo no histórico.'
+);
+
+
+if(!ok)
+return;
+
+
+/* Para GPS local */
+
+if(watchId !== null){
+
+navigator.geolocation.clearWatch(
+watchId
+);
+
+watchId = null;
+
+}
+
+
+status.innerHTML =
+'Encerrando percurso...';
+
+
+const {error} =
+await sb.rpc(
+'stop_tracking_session',
+{
+
+p_session:
+session,
+
+p_token:
+t
+
+}
+);
+
+
+if(error){
+
+status.innerHTML =
+'<span class="err">'+
+esc(error.message)+
+'</span>';
+
+return;
+
+}
+
+
+session = null;
+
+last = null;
+
+km = 0;
+
+
+sessionNotice.innerHTML = '';
+
+activeArea.hidden = true;
+
+trackingArea.hidden = true;
+
+startArea.hidden = false;
+
+startButton.disabled = false;
+
+
+status.className =
+'tracking-box';
+
+status.innerHTML = `
+
+<div class="status-title">
+✓ PERCURSO ENCERRADO
+</div>
+
+O percurso foi salvo.
+
+<br><br>
+
+Se iniciar novamente,
+será criado um novo percurso
+para esta mesma pessoa.
+
+`;
+
+}
+
+
+/* ENCERRAR APÓS REABRIR O LINK */
+
+stopButton.onclick =
+endSession;
+
+
+/* ENCERRAR DURANTE O GPS */
+
+stopTrackingButton.onclick =
+endSession;
+
+
+/* =====================================================
+   INICIALIZAÇÃO
+===================================================== */
+
+load();
+
+</script>
+
+</body>
+</html>
