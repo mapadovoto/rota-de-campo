@@ -15,6 +15,8 @@
 
 <main>
 
+<!-- NOVA OPERAÇÃO -->
+
 <div class="card">
 
 <h2>Nova operação</h2>
@@ -43,6 +45,25 @@ Data da operação
 </div>
 
 
+<!-- HISTÓRICO -->
+
+<div class="card">
+
+<h2>Operações salvas</h2>
+
+<p class="muted">
+Clique em uma operação para voltar a administrá-la.
+</p>
+
+<div id="operations">
+Carregando operações...
+</div>
+
+</div>
+
+
+<!-- OPERAÇÃO ABERTA -->
+
 <div class="card" id="opbox" hidden>
 
 <h2 id="opname"></h2>
@@ -53,15 +74,31 @@ Data da operação
 </p>
 
 <p>
+<strong>Contratante:</strong>
+<span id="opclient"></span>
+</p>
+
+<p>
+<strong>Área:</strong>
+<span id="oparea"></span>
+</p>
+
+<p>
 <strong>Link público:</strong><br>
 <code id="publink"></code>
 </p>
 
-<p>
+<div class="row">
+
 <button id="copyPublic" class="secondary">
 Copiar link público
 </button>
-</p>
+
+<button id="openPublic" class="secondary">
+Abrir mapa público
+</button>
+
+</div>
 
 <hr>
 
@@ -90,11 +127,8 @@ style="margin-top:20px">
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script src="config.js"></script>
-
 <script src="app.js"></script>
-
 
 <script>
 
@@ -112,10 +146,13 @@ document.querySelector('#people');
 const summary =
 document.querySelector('#summary');
 
+const operationsBox =
+document.querySelector('#operations');
 
-/* =====================================================
-   CORES AUTOMÁTICAS
-===================================================== */
+
+/* ================================================
+   CORES DAS PESSOAS
+================================================ */
 
 const COLORS = [
 '#2563eb',
@@ -129,7 +166,15 @@ const COLORS = [
 '#db2777',
 '#059669',
 '#7c3aed',
-'#0284c7'
+'#0284c7',
+'#65a30d',
+'#c026d3',
+'#0f766e',
+'#b45309',
+'#be123c',
+'#0369a1',
+'#6d28d9',
+'#15803d'
 ];
 
 function chooseColor(index){
@@ -137,9 +182,20 @@ return COLORS[index % COLORS.length];
 }
 
 
-/* =====================================================
-   DATA DE HOJE
-===================================================== */
+/* ================================================
+   DATA
+================================================ */
+
+function formatDate(date){
+
+if(!date)
+return '-';
+
+return new Date(
+date + 'T00:00:00'
+).toLocaleDateString('pt-BR');
+
+}
 
 const today =
 new Date().toISOString().split('T')[0];
@@ -148,9 +204,9 @@ document.querySelector('#operation_date').value =
 today;
 
 
-/* =====================================================
+/* ================================================
    CRIAR OPERAÇÃO
-===================================================== */
+================================================ */
 
 document.querySelector('#create').onclick =
 async()=>{
@@ -171,9 +227,12 @@ const n =
 nameEl.value.trim();
 
 if(!n){
+
 msg.textContent =
 'Informe o nome da operação.';
+
 return;
+
 }
 
 const public_token =
@@ -196,7 +255,6 @@ operation_date:
 dateEl.value,
 
 public_token:
-
 public_token,
 
 status:'active'
@@ -218,22 +276,255 @@ return;
 }
 
 
+msg.innerHTML =
+'<span class="ok">Operação criada.</span>';
+
+
+nameEl.value = '';
+clientEl.value = '';
+areaEl.value = '';
+
+await loadOperations();
+
+await openOperation(data.id);
+
+};
+
+
+/* ================================================
+   CARREGAR HISTÓRICO DE OPERAÇÕES
+================================================ */
+
+async function loadOperations(){
+
+operationsBox.innerHTML =
+'Carregando operações...';
+
+
+const {data,error} =
+await sb
+.from('operations')
+.select('*')
+.order('operation_date',{
+ascending:false
+})
+.order('created_at',{
+ascending:false
+});
+
+
+if(error){
+
+operationsBox.innerHTML =
+'<span class="err">'+
+esc(error.message)+
+'</span>';
+
+return;
+
+}
+
+
+if(!data || data.length === 0){
+
+operationsBox.innerHTML =
+'<p class="muted">Nenhuma operação cadastrada.</p>';
+
+return;
+
+}
+
+
+/* BUSCA QUANTAS PESSOAS EXISTEM */
+
+const {data:teamData} =
+await sb
+.from('teams')
+.select('id,operation_id,active');
+
+
+operationsBox.innerHTML = '';
+
+
+data.forEach(operation=>{
+
+const operationPeople =
+(teamData || []).filter(
+p =>
+p.operation_id === operation.id &&
+p.active !== false
+);
+
+const publicLink =
+base()+
+'public.html?t='+
+operation.public_token;
+
+
+const div =
+document.createElement('div');
+
+div.className = 'team';
+
+div.innerHTML = `
+
+<h3 style="margin-bottom:5px">
+${esc(operation.name)}
+</h3>
+
+<div>
+<strong>Data:</strong>
+${formatDate(operation.operation_date)}
+</div>
+
+<div>
+<strong>Contratante:</strong>
+${esc(operation.client_name || '-')}
+</div>
+
+<div>
+<strong>Área:</strong>
+${esc(operation.area_name || '-')}
+</div>
+
+<div>
+<strong>Pessoas:</strong>
+${operationPeople.length}
+</div>
+
+<div style="margin-top:12px"
+class="row">
+
+<button
+class="openOperation"
+data-id="${esc(operation.id)}">
+
+Abrir / Gerenciar
+
+</button>
+
+<button
+class="secondary openMap"
+data-link="${esc(publicLink)}">
+
+Abrir mapa
+
+</button>
+
+<button
+class="secondary copyOperation"
+data-link="${esc(publicLink)}">
+
+Copiar link público
+
+</button>
+
+</div>
+
+`;
+
+operationsBox.appendChild(div);
+
+});
+
+}
+
+
+/* ================================================
+   BOTÕES DO HISTÓRICO
+================================================ */
+
+operationsBox.addEventListener(
+'click',
+async e=>{
+
+
+if(
+e.target.classList.contains('openOperation')
+){
+
+await openOperation(
+e.target.dataset.id
+);
+
+}
+
+
+if(
+e.target.classList.contains('openMap')
+){
+
+window.open(
+e.target.dataset.link,
+'_blank'
+);
+
+}
+
+
+if(
+e.target.classList.contains('copyOperation')
+){
+
+await navigator.clipboard.writeText(
+e.target.dataset.link
+);
+
+alert('Link público copiado.');
+
+}
+
+});
+
+
+/* ================================================
+   ABRIR OPERAÇÃO EXISTENTE
+================================================ */
+
+async function openOperation(id){
+
+const {data,error} =
+await sb
+.from('operations')
+.select('*')
+.eq('id',id)
+.single();
+
+
+if(error){
+
+alert(error.message);
+
+return;
+
+}
+
+
 op = data;
 
 box.hidden = false;
+
 
 document.querySelector('#opname')
 .textContent =
 data.name;
 
+
 document.querySelector('#opdate')
 .textContent =
+formatDate(
 data.operation_date
-? new Date(
-data.operation_date+
-'T00:00:00'
-).toLocaleDateString('pt-BR')
-: '-';
+);
+
+
+document.querySelector('#opclient')
+.textContent =
+data.client_name || '-';
+
+
+document.querySelector('#oparea')
+.textContent =
+data.area_name || '-';
 
 
 document.querySelector('#publink')
@@ -243,34 +534,66 @@ base()+
 data.public_token;
 
 
-msg.innerHTML =
-'<span class="ok">Operação criada.</span>';
+await loadPeople();
+
+
+box.scrollIntoView({
+behavior:'smooth',
+block:'start'
+});
+
+}
+
+
+/* ================================================
+   CARREGAR PESSOAS DA OPERAÇÃO
+================================================ */
+
+async function loadPeople(){
+
+if(!op)
+return;
+
+
+const {data,error} =
+await sb
+.from('teams')
+.select('*')
+.eq('operation_id',op.id)
+.eq('active',true)
+.order('created_at',{
+ascending:true
+});
+
+
+if(error){
+
+people.innerHTML =
+'<span class="err">'+
+esc(error.message)+
+'</span>';
+
+return;
+
+}
+
+
+people.innerHTML = '';
+
+
+(data || []).forEach(
+person => renderPerson(person)
+);
 
 
 renderSummary();
 
-};
+}
 
 
-/* =====================================================
-   COPIAR LINK PÚBLICO
-===================================================== */
-
-document.querySelector('#copyPublic')
-.onclick =
-()=>{
-
-navigator.clipboard.writeText(
-document.querySelector('#publink')
-.textContent
-);
-
-};
-
-
-/* =====================================================
+/* ================================================
    ADICIONAR PESSOA
-===================================================== */
+================================================ */
 
 document.querySelector('#addperson')
 .onclick =
@@ -279,21 +602,39 @@ async()=>{
 if(!op)
 return;
 
+
 const input =
 document.querySelector('#personname');
 
 const n =
 input.value.trim();
 
+
 if(!n)
 return;
 
 
-const existing =
-people.querySelectorAll('.person').length;
+const {data:allPeople,error:countError} =
+await sb
+.from('teams')
+.select('id')
+.eq('operation_id',op.id);
+
+
+if(countError){
+
+alert(countError.message);
+
+return;
+
+}
+
 
 const color =
-chooseColor(existing);
+chooseColor(
+(allPeople || []).length
+);
+
 
 const track_token =
 token();
@@ -331,18 +672,20 @@ return;
 }
 
 
-renderPerson(data);
-
 input.value = '';
 
+renderPerson(data);
+
 renderSummary();
+
+await loadOperations();
 
 };
 
 
-/* =====================================================
+/* ================================================
    MOSTRAR PESSOA
-===================================================== */
+================================================ */
 
 function renderPerson(data){
 
@@ -400,7 +743,8 @@ Copiar link individual
 
 <button
 class="secondary remove"
-data-id="${esc(data.id)}">
+data-id="${esc(data.id)}"
+data-name="${esc(data.name)}">
 
 Remover pessoa
 
@@ -413,9 +757,9 @@ people.appendChild(div);
 }
 
 
-/* =====================================================
-   COPIAR / REMOVER
-===================================================== */
+/* ================================================
+   BOTÕES DAS PESSOAS
+================================================ */
 
 people.addEventListener(
 'click',
@@ -426,12 +770,16 @@ if(
 e.target.classList.contains('copy')
 ){
 
-navigator.clipboard.writeText(
+await navigator.clipboard.writeText(
 e.target.dataset.link
 );
 
+alert('Link individual copiado.');
+
 }
 
+
+/* REMOÇÃO SEM APAGAR HISTÓRICO */
 
 if(
 e.target.classList.contains('remove')
@@ -440,11 +788,17 @@ e.target.classList.contains('remove')
 const id =
 e.target.dataset.id;
 
+const personName =
+e.target.dataset.name;
+
 
 const ok =
 confirm(
-'Remover esta pessoa da operação? O histórico já realizado será preservado.'
+'Remover '+personName+
+' desta operação?\n\n'+
+'O histórico de percurso já realizado será preservado.'
 );
+
 
 if(!ok)
 return;
@@ -468,25 +822,49 @@ return;
 }
 
 
-const card =
-people.querySelector(
-`[data-id="${id}"]`
-);
+await loadPeople();
 
-if(card)
-card.remove();
-
-
-renderSummary();
+await loadOperations();
 
 }
 
 });
 
 
-/* =====================================================
+/* ================================================
+   LINK PÚBLICO
+================================================ */
+
+document.querySelector('#copyPublic')
+.onclick =
+async()=>{
+
+await navigator.clipboard.writeText(
+document.querySelector('#publink')
+.textContent
+);
+
+alert('Link público copiado.');
+
+};
+
+
+document.querySelector('#openPublic')
+.onclick =
+()=>{
+
+window.open(
+document.querySelector('#publink')
+.textContent,
+'_blank'
+);
+
+};
+
+
+/* ================================================
    RESUMO
-===================================================== */
+================================================ */
 
 function renderSummary(){
 
@@ -514,6 +892,13 @@ Pessoas cadastradas:
 `;
 
 }
+
+
+/* ================================================
+   INICIALIZAÇÃO
+================================================ */
+
+loadOperations();
 
 </script>
 
