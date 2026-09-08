@@ -1,10 +1,521 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"><title>Admin — Rota de Campo</title></head><body><header><h1>Rota de Campo — Administrador</h1></header><main>
-<div class="card"><h2>Nova operação</h2><div class="grid"><input id="name" placeholder="Nome da operação"><input id="client" placeholder="Contratante"><input id="area" placeholder="Bairro / área"></div><p><button id="create">Criar operação</button></p><div id="msg"></div></div>
-<div class="card" id="opbox" hidden><h2 id="opname"></h2><p>Link público: <code id="publink"></code></p><p><button id="copyPublic" class="secondary">Copiar link público</button></p><hr><h3>Adicionar equipe</h3><div class="row"><input id="teamname" placeholder="Ex.: Equipe 01"><button id="addteam">Adicionar</button></div><div id="teams"></div></div>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script><script>
-let op=null;
-const msg=document.querySelector('#msg'), box=document.querySelector('#opbox'), teams=document.querySelector('#teams');
-document.querySelector('#create').onclick=async()=>{ const n=document.querySelector('#name').value.trim(); if(!n)return msg.textContent='Informe o nome.'; const public_token=token(); const {data,error}=await sb.from('operations').insert({name:n,client_name:document.querySelector('#client').value.trim(),area_name:document.querySelector('#area').value.trim(),public_token}).select().single(); if(error){msg.innerHTML='<span class="err">'+esc(error.message)+'</span>';return;} op=data; box.hidden=false; opname.textContent=data.name; publink.textContent=base()+'public.html?t='+data.public_token; msg.innerHTML='<span class="ok">Operação criada.</span>'; };document.querySelector('#copyPublic').onclick=()=>navigator.clipboard.writeText(publink.textContent);
-document.querySelector('#addteam').onclick=async()=>{ if(!op)return; const n=teamname.value.trim(); if(!n)return; const track_token=token(); const {data,error}=await sb.from('teams').insert({operation_id:op.id,name:n,track_token}).select().single(); if(error)return alert(error.message); const link=base()+'track.html?t='+data.track_token; teams.insertAdjacentHTML('beforeend',`<div class="team"><b>${esc(data.name)}</b><br><code>${esc(link)}</code><br><button class="secondary copy" data-link="${esc(link)}">Copiar link da equipe</button></div>`); teamname.value=''; };
-teams.addEventListener('click',e=>{if(e.target.classList.contains('copy'))navigator.clipboard.writeText(e.target.dataset.link)});
-</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="style.css">
+<title>Administrador — Rota de Campo</title>
+</head>
+
+<body>
+
+<header>
+<h1>Rota de Campo — Administrador</h1>
+</header>
+
+<main>
+
+<div class="card">
+
+<h2>Nova operação</h2>
+
+<div class="grid">
+
+<input id="name" placeholder="Nome da operação">
+
+<input id="client" placeholder="Contratante">
+
+<input id="area" placeholder="Bairro / área">
+
+<label>
+Data da operação
+<input id="operation_date" type="date">
+</label>
+
+</div>
+
+<p>
+<button id="create">Criar operação</button>
+</p>
+
+<div id="msg"></div>
+
+</div>
+
+
+<div class="card" id="opbox" hidden>
+
+<h2 id="opname"></h2>
+
+<p>
+<strong>Data:</strong>
+<span id="opdate"></span>
+</p>
+
+<p>
+<strong>Link público:</strong><br>
+<code id="publink"></code>
+</p>
+
+<p>
+<button id="copyPublic" class="secondary">
+Copiar link público
+</button>
+</p>
+
+<hr>
+
+<h3>Pessoas / Panfleteiros</h3>
+
+<div class="row">
+
+<input id="personname"
+placeholder="Nome da pessoa">
+
+<button id="addperson">
+Adicionar pessoa
+</button>
+
+</div>
+
+<div id="summary"
+style="margin-top:20px">
+</div>
+
+<div id="people"></div>
+
+</div>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="config.js"></script>
+
+<script src="app.js"></script>
+
+
+<script>
+
+let op = null;
+
+const msg =
+document.querySelector('#msg');
+
+const box =
+document.querySelector('#opbox');
+
+const people =
+document.querySelector('#people');
+
+const summary =
+document.querySelector('#summary');
+
+
+/* =====================================================
+   CORES AUTOMÁTICAS
+===================================================== */
+
+const COLORS = [
+'#2563eb',
+'#16a34a',
+'#ea580c',
+'#9333ea',
+'#dc2626',
+'#0891b2',
+'#ca8a04',
+'#4f46e5',
+'#db2777',
+'#059669',
+'#7c3aed',
+'#0284c7'
+];
+
+function chooseColor(index){
+return COLORS[index % COLORS.length];
+}
+
+
+/* =====================================================
+   DATA DE HOJE
+===================================================== */
+
+const today =
+new Date().toISOString().split('T')[0];
+
+document.querySelector('#operation_date').value =
+today;
+
+
+/* =====================================================
+   CRIAR OPERAÇÃO
+===================================================== */
+
+document.querySelector('#create').onclick =
+async()=>{
+
+const nameEl =
+document.querySelector('#name');
+
+const clientEl =
+document.querySelector('#client');
+
+const areaEl =
+document.querySelector('#area');
+
+const dateEl =
+document.querySelector('#operation_date');
+
+const n =
+nameEl.value.trim();
+
+if(!n){
+msg.textContent =
+'Informe o nome da operação.';
+return;
+}
+
+const public_token =
+token();
+
+const {data,error} =
+await sb
+.from('operations')
+.insert({
+
+name:n,
+
+client_name:
+clientEl.value.trim(),
+
+area_name:
+areaEl.value.trim(),
+
+operation_date:
+dateEl.value,
+
+public_token:
+
+public_token,
+
+status:'active'
+
+})
+.select()
+.single();
+
+
+if(error){
+
+msg.innerHTML =
+'<span class="err">'+
+esc(error.message)+
+'</span>';
+
+return;
+
+}
+
+
+op = data;
+
+box.hidden = false;
+
+document.querySelector('#opname')
+.textContent =
+data.name;
+
+document.querySelector('#opdate')
+.textContent =
+data.operation_date
+? new Date(
+data.operation_date+
+'T00:00:00'
+).toLocaleDateString('pt-BR')
+: '-';
+
+
+document.querySelector('#publink')
+.textContent =
+base()+
+'public.html?t='+
+data.public_token;
+
+
+msg.innerHTML =
+'<span class="ok">Operação criada.</span>';
+
+
+renderSummary();
+
+};
+
+
+/* =====================================================
+   COPIAR LINK PÚBLICO
+===================================================== */
+
+document.querySelector('#copyPublic')
+.onclick =
+()=>{
+
+navigator.clipboard.writeText(
+document.querySelector('#publink')
+.textContent
+);
+
+};
+
+
+/* =====================================================
+   ADICIONAR PESSOA
+===================================================== */
+
+document.querySelector('#addperson')
+.onclick =
+async()=>{
+
+if(!op)
+return;
+
+const input =
+document.querySelector('#personname');
+
+const n =
+input.value.trim();
+
+if(!n)
+return;
+
+
+const existing =
+people.querySelectorAll('.person').length;
+
+const color =
+chooseColor(existing);
+
+const track_token =
+token();
+
+
+const {data,error} =
+await sb
+.from('teams')
+.insert({
+
+operation_id:
+op.id,
+
+name:n,
+
+track_token:
+track_token,
+
+color:
+color,
+
+active:true
+
+})
+.select()
+.single();
+
+
+if(error){
+
+alert(error.message);
+
+return;
+
+}
+
+
+renderPerson(data);
+
+input.value = '';
+
+renderSummary();
+
+};
+
+
+/* =====================================================
+   MOSTRAR PESSOA
+===================================================== */
+
+function renderPerson(data){
+
+const link =
+base()+
+'track.html?t='+
+data.track_token;
+
+
+const div =
+document.createElement('div');
+
+div.className =
+'team person';
+
+div.dataset.id =
+data.id;
+
+
+div.innerHTML = `
+
+<div style="
+display:flex;
+align-items:center;
+gap:10px;
+margin-bottom:8px">
+
+<span style="
+display:inline-block;
+width:18px;
+height:18px;
+border-radius:50%;
+background:${esc(data.color || '#2563eb')}">
+</span>
+
+<strong>
+${esc(data.name)}
+</strong>
+
+</div>
+
+<code>
+${esc(link)}
+</code>
+
+<br><br>
+
+<button
+class="secondary copy"
+data-link="${esc(link)}">
+
+Copiar link individual
+
+</button>
+
+<button
+class="secondary remove"
+data-id="${esc(data.id)}">
+
+Remover pessoa
+
+</button>
+
+`;
+
+people.appendChild(div);
+
+}
+
+
+/* =====================================================
+   COPIAR / REMOVER
+===================================================== */
+
+people.addEventListener(
+'click',
+async e=>{
+
+
+if(
+e.target.classList.contains('copy')
+){
+
+navigator.clipboard.writeText(
+e.target.dataset.link
+);
+
+}
+
+
+if(
+e.target.classList.contains('remove')
+){
+
+const id =
+e.target.dataset.id;
+
+
+const ok =
+confirm(
+'Remover esta pessoa da operação? O histórico já realizado será preservado.'
+);
+
+if(!ok)
+return;
+
+
+const {error} =
+await sb
+.from('teams')
+.update({
+active:false
+})
+.eq('id',id);
+
+
+if(error){
+
+alert(error.message);
+
+return;
+
+}
+
+
+const card =
+people.querySelector(
+`[data-id="${id}"]`
+);
+
+if(card)
+card.remove();
+
+
+renderSummary();
+
+}
+
+});
+
+
+/* =====================================================
+   RESUMO
+===================================================== */
+
+function renderSummary(){
+
+const total =
+people.querySelectorAll(
+'.person'
+).length;
+
+
+summary.innerHTML = `
+
+<div class="card">
+
+<strong>
+Resumo da operação
+</strong>
+
+<br>
+
+Pessoas cadastradas:
+<strong>${total}</strong>
+
+</div>
+
+`;
+
+}
+
+</script>
+
+</body>
+</html>
