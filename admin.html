@@ -4,224 +4,709 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="style.css">
-<title>Administrador — Rota de Campo</title>
+<title>Mapa do Voto — Painel de Controle</title>
 
 <style>
+/* =====================================================
+   MAPA DO VOTO — PAINEL ADMINISTRATIVO
+===================================================== */
+
+body{
+    background:#f3f6f8;
+    color:#10233b;
+}
+
+/* CABEÇALHO */
+
+.admin-header{
+    background:
+        radial-gradient(circle at 15% 20%,rgba(0,177,106,.20),transparent 28%),
+        linear-gradient(135deg,#071d32,#06324b);
+    color:#fff;
+    padding:25px 20px;
+    border-bottom:5px solid #00ad68;
+    box-shadow:0 4px 18px rgba(0,0,0,.12);
+}
+
+.header-inner{
+    max-width:1100px;
+    margin:auto;
+    display:flex;
+    align-items:center;
+    gap:18px;
+}
+
+.header-logo{
+    width:82px;
+    height:82px;
+    object-fit:contain;
+    border-radius:20px;
+}
+
+.header-text h1{
+    margin:0;
+    font-size:1.8rem;
+    letter-spacing:-.02em;
+}
+
+.header-text p{
+    margin:5px 0 0;
+    color:#c9d8e5;
+    font-size:.96rem;
+}
+
+.brand-line{
+    width:70px;
+    height:5px;
+    background:#00ad68;
+    border-radius:20px;
+    margin-top:11px;
+}
+
+/* CONTEÚDO */
+
+main{
+    max-width:1100px;
+    margin:auto;
+    padding:28px 20px 50px;
+}
+
+.section-card{
+    background:#fff;
+    border:1px solid #dce4ea;
+    border-radius:20px;
+    padding:24px;
+    margin-bottom:22px;
+    box-shadow:0 6px 22px rgba(15,35,55,.06);
+}
+
+.section-heading{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.section-heading h2{
+    margin:0;
+    font-size:1.35rem;
+    color:#10233b;
+}
+
+.section-heading p{
+    margin:5px 0 0;
+    color:#6b7785;
+}
+
+/* FORMULÁRIO */
+
+.form-label{
+    display:block;
+    font-size:.84rem;
+    font-weight:700;
+    color:#536273;
+    margin-bottom:6px;
+}
+
+.admin-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:16px;
+}
+
+.admin-grid input{
+    width:100%;
+    background:#f9fbfc;
+    border:1px solid #ced8e1;
+    padding:14px;
+    border-radius:11px;
+    outline:none;
+    transition:.2s;
+}
+
+.admin-grid input:focus,
+.person-row input:focus{
+    border-color:#00a864;
+    box-shadow:0 0 0 3px rgba(0,168,100,.10);
+    background:#fff;
+}
+
+.create-button{
+    margin-top:18px;
+    background:linear-gradient(135deg,#00ad68,#07854f);
+    border:0;
+    padding:14px 24px;
+    min-width:190px;
+    box-shadow:0 6px 14px rgba(0,150,90,.18);
+}
+
+/* HISTÓRICO */
+
+#operations{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:15px;
+}
+
+#operations .team{
+    border:1px solid #dce4ea;
+    border-radius:15px;
+    padding:18px;
+    background:#fff;
+    box-shadow:0 3px 12px rgba(15,35,55,.04);
+    transition:.18s ease;
+}
+
+#operations .team:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(15,35,55,.09);
+}
+
+#operations .team h3{
+    color:#10233b;
+    font-size:1.08rem;
+}
+
+#operations .team > div:not(.operation-actions){
+    margin-top:7px;
+    color:#596878;
+    font-size:.92rem;
+}
+
 .status-badge{
-display:inline-block;
-padding:5px 9px;
-border-radius:999px;
-font-size:.82rem;
-font-weight:700;
-margin:5px 0;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 11px;
+    border-radius:999px;
+    font-size:.76rem;
+    font-weight:800;
+    margin:6px 0 10px;
+    letter-spacing:.03em;
 }
+
 .status-active{
-background:#dcfce7;
-color:#166534;
+    background:#e7f9f0;
+    color:#087747;
+    border:1px solid #a9e5c8;
 }
+
+.status-active:before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#00ad68;
+}
+
 .status-finished{
-background:#e5e7eb;
-color:#374151;
+    background:#eef1f4;
+    color:#56616e;
+    border:1px solid #d7dde3;
 }
+
+/* BOTÕES */
+
 .operation-actions{
-margin-top:12px;
-display:flex;
-gap:8px;
-flex-wrap:wrap;
+    margin-top:16px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
 }
-.btn-finish{
-background:#167447;
+
+.operation-actions button{
+    padding:10px 12px;
+    font-size:.84rem;
 }
-.btn-clear{
-background:#b45309;
+
+.openOperation{
+    background:#102d48;
 }
-.btn-delete{
-background:#a72a2a;
+
+.secondary{
+    background:#fff !important;
+    color:#18324c !important;
+    border:1px solid #ccd7e0 !important;
 }
+
+.secondary:hover{
+    background:#f4f7f9 !important;
+}
+
+/* OPERAÇÃO ABERTA */
+
+.operation-open{
+    border-top:5px solid #00ad68;
+}
+
+.operation-title-area{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.operation-title-area h2{
+    margin:0 0 7px;
+    font-size:1.55rem;
+}
+
+.operation-data{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin:20px 0;
+}
+
+.info-box{
+    background:#f6f9fb;
+    border:1px solid #e0e7ed;
+    padding:14px;
+    border-radius:12px;
+}
+
+.info-box .label{
+    display:block;
+    font-size:.76rem;
+    color:#74808d;
+    text-transform:uppercase;
+    font-weight:800;
+    letter-spacing:.04em;
+    margin-bottom:5px;
+}
+
+.info-box .value{
+    color:#18324c;
+    font-weight:700;
+}
+
+.public-link-box{
+    background:#eef8f4;
+    border:1px solid #c6ead9;
+    padding:16px;
+    border-radius:13px;
+    margin:15px 0;
+}
+
+.public-link-box .label{
+    font-size:.78rem;
+    color:#36705a;
+    font-weight:800;
+    text-transform:uppercase;
+}
+
+.public-link-box code{
+    display:block;
+    margin-top:7px;
+    color:#13563c;
+}
+
+/* PESSOAS */
+
+.people-section{
+    margin-top:28px;
+    padding-top:24px;
+    border-top:1px solid #e0e6eb;
+}
+
+.people-section h3{
+    margin-top:0;
+    font-size:1.18rem;
+}
+
+.person-row{
+    display:flex;
+    gap:10px;
+}
+
+.person-row input{
+    flex:1;
+    min-width:200px;
+    border:1px solid #ced8e1;
+    padding:13px;
+    border-radius:10px;
+}
+
+#people{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    margin-top:16px;
+}
+
+#people .team{
+    border:1px solid #dfe6eb;
+    border-radius:14px;
+    padding:16px;
+    background:#fafcfd;
+}
+
+#people code{
+    display:block;
+    background:#fff;
+    border:1px solid #e0e6eb;
+    border-radius:8px;
+    padding:9px;
+    font-size:.75rem;
+    color:#657281;
+}
+
+/* RESUMO */
+
+#summary .card{
+    background:#f1f8f5;
+    border:1px solid #cce8dc;
+    box-shadow:none;
+    border-radius:12px;
+    margin:18px 0 0;
+    padding:13px 16px;
+    color:#285d49;
+}
+
+/* ÁREA DE CONTROLE */
+
 .management{
-margin-top:22px;
-padding-top:18px;
-border-top:2px solid #e5e9f0;
+    margin-top:30px;
+    padding:22px;
+    border-radius:15px;
+    background:#fffafa;
+    border:1px solid #f1d8d8;
 }
+
+.management h3{
+    margin-top:0;
+}
+
+.management .operation-actions{
+    margin-top:15px;
+}
+
+.btn-finish{
+    background:#08794a;
+}
+
+.btn-clear{
+    background:#b6690b;
+}
+
+.btn-delete{
+    background:#ad2929;
+}
+
 .warning-box{
-background:#fff7ed;
-border:1px solid #fed7aa;
-border-radius:10px;
-padding:12px;
-margin-top:12px;
+    background:#fff7ed;
+    border:1px solid #fed7aa;
+    color:#82430c;
+    border-radius:11px;
+    padding:14px;
+    margin-top:16px;
+    line-height:1.55;
+}
+
+/* MENSAGENS */
+
+#msg{
+    margin-top:12px;
+    font-weight:600;
+}
+
+.ok{
+    color:#087747;
+}
+
+.err{
+    color:#b42318;
+}
+
+/* MOBILE */
+
+@media(max-width:750px){
+
+    .header-inner{
+        flex-direction:column;
+        text-align:center;
+    }
+
+    .brand-line{
+        margin:11px auto 0;
+    }
+
+    .header-logo{
+        width:76px;
+        height:76px;
+    }
+
+    main{
+        padding:16px 12px 35px;
+    }
+
+    .section-card{
+        padding:18px;
+        border-radius:16px;
+    }
+
+    .admin-grid,
+    #operations,
+    #people,
+    .operation-data{
+        grid-template-columns:1fr;
+    }
+
+    .person-row{
+        flex-direction:column;
+    }
+
+    .person-row button,
+    .create-button{
+        width:100%;
+    }
+
+    .operation-actions{
+        flex-direction:column;
+    }
+
+    .operation-actions button{
+        width:100%;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<header>
-<h1>Rota de Campo — Administrador</h1>
+<header class="admin-header">
+    <div class="header-inner">
+        <img
+            src="mapa-do-voto-logo.png"
+            class="header-logo"
+            alt="Mapa do Voto"
+        >
+
+        <div class="header-text">
+            <h1>Mapa do Voto</h1>
+            <p>Painel de Controle de Campo</p>
+            <div class="brand-line"></div>
+        </div>
+    </div>
 </header>
 
 <main>
 
-<!-- NOVA OPERAÇÃO -->
+<!-- =====================================================
+     NOVA OPERAÇÃO
+===================================================== -->
 
-<div class="card">
+<section class="section-card">
 
-<h2>Nova operação</h2>
+    <div class="section-heading">
+        <div>
+            <h2>Nova operação</h2>
+            <p>Cadastre uma nova ação de campo e seus dados principais.</p>
+        </div>
+    </div>
 
-<div class="grid">
+    <div class="admin-grid">
 
-<input id="name" placeholder="Nome da operação">
+        <div>
+            <label class="form-label">NOME DA OPERAÇÃO</label>
+            <input id="name" placeholder="Ex.: Panfletagem Centro">
+        </div>
 
-<input id="client" placeholder="Contratante">
+        <div>
+            <label class="form-label">CONTRATANTE</label>
+            <input id="client" placeholder="Nome do contratante">
+        </div>
 
-<input id="area" placeholder="Bairro / área">
+        <div>
+            <label class="form-label">BAIRRO / ÁREA</label>
+            <input id="area" placeholder="Local da operação">
+        </div>
 
-<label>
-Data da operação
-<input id="operation_date" type="date">
-</label>
+        <div>
+            <label class="form-label">DATA DA OPERAÇÃO</label>
+            <input id="operation_date" type="date">
+        </div>
 
-</div>
+    </div>
 
-<p>
-<button id="create">Criar operação</button>
-</p>
+    <button id="create" class="create-button">
+        + CRIAR OPERAÇÃO
+    </button>
 
-<div id="msg"></div>
+    <div id="msg"></div>
 
-</div>
-
-
-<!-- HISTÓRICO -->
-
-<div class="card">
-
-<h2>Operações salvas</h2>
-
-<p class="muted">
-Operações em andamento e histórico de operações finalizadas.
-</p>
-
-<div id="operations">
-Carregando operações...
-</div>
-
-</div>
-
-
-<!-- OPERAÇÃO ABERTA -->
-
-<div class="card" id="opbox" hidden>
-
-<h2 id="opname"></h2>
-
-<div id="opstatus"></div>
-
-<p>
-<strong>Data:</strong>
-<span id="opdate"></span>
-</p>
-
-<p>
-<strong>Contratante:</strong>
-<span id="opclient"></span>
-</p>
-
-<p>
-<strong>Área:</strong>
-<span id="oparea"></span>
-</p>
-
-<p>
-<strong>Link público:</strong><br>
-<code id="publink"></code>
-</p>
-
-<div class="row">
-
-<button id="copyPublic" class="secondary">
-Copiar link público
-</button>
-
-<button id="openPublic" class="secondary">
-Abrir mapa público
-</button>
-
-</div>
-
-<hr>
-
-<h3>Pessoas / Panfleteiros</h3>
-
-<div id="addPersonArea">
-
-<div class="row">
-
-<input id="personname"
-placeholder="Nome da pessoa">
-
-<button id="addperson">
-Adicionar pessoa
-</button>
-
-</div>
-
-</div>
-
-<div id="summary"
-style="margin-top:20px">
-</div>
-
-<div id="people"></div>
+</section>
 
 
-<!-- CONTROLE DA OPERAÇÃO -->
+<!-- =====================================================
+     HISTÓRICO
+===================================================== -->
 
-<div class="management">
+<section class="section-card">
 
-<h3>Controle da operação</h3>
+    <div class="section-heading">
+        <div>
+            <h2>Operações</h2>
+            <p>Gerencie operações em andamento e consulte o histórico.</p>
+        </div>
+    </div>
 
-<p class="muted">
-Use estas opções somente quando necessário.
-</p>
+    <div id="operations">
+        Carregando operações...
+    </div>
 
-<div class="operation-actions">
+</section>
 
-<button
-id="finishOperation"
-class="btn-finish">
-Finalizar operação
-</button>
 
-<button
-id="clearRoutes"
-class="btn-clear">
-Limpar percursos
-</button>
+<!-- =====================================================
+     OPERAÇÃO ABERTA
+===================================================== -->
 
-<button
-id="deleteOperation"
-class="btn-delete">
-Excluir operação definitivamente
-</button>
+<section
+    class="section-card operation-open"
+    id="opbox"
+    hidden
+>
 
-</div>
+    <div class="operation-title-area">
 
-<div class="warning-box">
+        <div>
+            <div class="muted">OPERAÇÃO SELECIONADA</div>
+            <h2 id="opname"></h2>
+            <div id="opstatus"></div>
+        </div>
 
-<strong>Atenção:</strong><br>
+    </div>
 
-Finalizar mantém todo o histórico.<br>
+    <div class="operation-data">
 
-Limpar percursos apaga os registros GPS,
-mas mantém a operação e as pessoas.<br>
+        <div class="info-box">
+            <span class="label">Data</span>
+            <span class="value" id="opdate"></span>
+        </div>
 
-Excluir definitivamente apaga toda a operação.
+        <div class="info-box">
+            <span class="label">Contratante</span>
+            <span class="value" id="opclient"></span>
+        </div>
 
-</div>
+        <div class="info-box">
+            <span class="label">Área</span>
+            <span class="value" id="oparea"></span>
+        </div>
 
-</div>
+    </div>
 
-</div>
+    <div class="public-link-box">
+
+        <span class="label">Link de acompanhamento público</span>
+
+        <code id="publink"></code>
+
+    </div>
+
+    <div class="row">
+
+        <button id="copyPublic" class="secondary">
+            COPIAR LINK PÚBLICO
+        </button>
+
+        <button id="openPublic" class="secondary">
+            ABRIR MAPA PÚBLICO
+        </button>
+
+    </div>
+
+
+    <!-- PESSOAS -->
+
+    <div class="people-section">
+
+        <h3>Pessoas em campo</h3>
+
+        <p class="muted">
+            Adicione os integrantes e envie o link individual correspondente.
+        </p>
+
+        <div id="addPersonArea">
+
+            <div class="person-row">
+
+                <input
+                    id="personname"
+                    placeholder="Nome da pessoa / panfleteiro"
+                >
+
+                <button id="addperson">
+                    + ADICIONAR PESSOA
+                </button>
+
+            </div>
+
+        </div>
+
+        <div id="summary"></div>
+
+        <div id="people"></div>
+
+    </div>
+
+
+    <!-- CONTROLE -->
+
+    <div class="management">
+
+        <h3>Controle da operação</h3>
+
+        <p class="muted">
+            Finalização, limpeza dos registros e exclusão da operação.
+        </p>
+
+        <div class="operation-actions">
+
+            <button
+                id="finishOperation"
+                class="btn-finish"
+            >
+                FINALIZAR OPERAÇÃO
+            </button>
+
+            <button
+                id="clearRoutes"
+                class="btn-clear"
+            >
+                LIMPAR PERCURSOS
+            </button>
+
+            <button
+                id="deleteOperation"
+                class="btn-delete"
+            >
+                EXCLUIR DEFINITIVAMENTE
+            </button>
+
+        </div>
+
+        <div class="warning-box">
+
+            <strong>Atenção</strong><br><br>
+
+            <strong>Finalizar:</strong>
+            mantém todo o histórico da operação.<br>
+
+            <strong>Limpar percursos:</strong>
+            apaga os registros GPS, mantendo a operação e as pessoas.<br>
+
+            <strong>Excluir definitivamente:</strong>
+            remove a operação, pessoas, sessões e pontos GPS.
+
+        </div>
+
+    </div>
+
+</section>
 
 </main>
 
@@ -234,20 +719,11 @@ Excluir definitivamente apaga toda a operação.
 
 let op = null;
 
-const msg =
-document.querySelector('#msg');
-
-const box =
-document.querySelector('#opbox');
-
-const people =
-document.querySelector('#people');
-
-const summary =
-document.querySelector('#summary');
-
-const operationsBox =
-document.querySelector('#operations');
+const msg = document.querySelector('#msg');
+const box = document.querySelector('#opbox');
+const people = document.querySelector('#people');
+const summary = document.querySelector('#summary');
+const operationsBox = document.querySelector('#operations');
 
 
 /* =====================================================
@@ -278,7 +754,7 @@ const COLORS = [
 ];
 
 function chooseColor(index){
-return COLORS[index % COLORS.length];
+    return COLORS[index % COLORS.length];
 }
 
 
@@ -288,20 +764,20 @@ return COLORS[index % COLORS.length];
 
 function formatDate(date){
 
-if(!date)
-return '-';
+    if(!date)
+        return '-';
 
-return new Date(
-date + 'T00:00:00'
-).toLocaleDateString('pt-BR');
+    return new Date(
+        date + 'T00:00:00'
+    ).toLocaleDateString('pt-BR');
 
 }
 
 const today =
-new Date().toISOString().split('T')[0];
+    new Date().toISOString().split('T')[0];
 
 document.querySelector('#operation_date').value =
-today;
+    today;
 
 
 /* =====================================================
@@ -311,82 +787,77 @@ today;
 document.querySelector('#create').onclick =
 async()=>{
 
-const nameEl =
-document.querySelector('#name');
+    const nameEl =
+        document.querySelector('#name');
 
-const clientEl =
-document.querySelector('#client');
+    const clientEl =
+        document.querySelector('#client');
 
-const areaEl =
-document.querySelector('#area');
+    const areaEl =
+        document.querySelector('#area');
 
-const dateEl =
-document.querySelector('#operation_date');
+    const dateEl =
+        document.querySelector('#operation_date');
 
-const n =
-nameEl.value.trim();
+    const n =
+        nameEl.value.trim();
 
-if(!n){
+    if(!n){
 
-msg.textContent =
-'Informe o nome da operação.';
+        msg.textContent =
+            'Informe o nome da operação.';
 
-return;
+        return;
+    }
 
-}
+    const public_token =
+        token();
 
-const public_token =
-token();
+    const {data,error} =
+        await sb
+        .from('operations')
+        .insert({
 
-const {data,error} =
-await sb
-.from('operations')
-.insert({
+            name:n,
 
-name:n,
+            client_name:
+                clientEl.value.trim(),
 
-client_name:
-clientEl.value.trim(),
+            area_name:
+                areaEl.value.trim(),
 
-area_name:
-areaEl.value.trim(),
+            operation_date:
+                dateEl.value,
 
-operation_date:
-dateEl.value,
+            public_token:
+                public_token,
 
-public_token:
-public_token,
+            status:'active'
 
-status:'active'
-
-})
-.select()
-.single();
-
-
-if(error){
-
-msg.innerHTML =
-'<span class="err">'+
-esc(error.message)+
-'</span>';
-
-return;
-
-}
+        })
+        .select()
+        .single();
 
 
-msg.innerHTML =
-'<span class="ok">Operação criada.</span>';
+    if(error){
 
-nameEl.value = '';
-clientEl.value = '';
-areaEl.value = '';
+        msg.innerHTML =
+            '<span class="err">'+
+            esc(error.message)+
+            '</span>';
 
-await loadOperations();
+        return;
+    }
 
-await openOperation(data.id);
+    msg.innerHTML =
+        '<span class="ok">Operação criada.</span>';
 
+    nameEl.value = '';
+    clientEl.value = '';
+    areaEl.value = '';
+
+    await loadOperations();
+    await openOperation(data.id);
 };
 
 
@@ -396,136 +867,122 @@ await openOperation(data.id);
 
 async function loadOperations(){
 
-operationsBox.innerHTML =
-'Carregando operações...';
+    operationsBox.innerHTML =
+        'Carregando operações...';
 
+    const {data,error} =
+        await sb
+        .from('operations')
+        .select('*')
+        .order('operation_date',{
+            ascending:false
+        })
+        .order('created_at',{
+            ascending:false
+        });
 
-const {data,error} =
-await sb
-.from('operations')
-.select('*')
-.order('operation_date',{
-ascending:false
-})
-.order('created_at',{
-ascending:false
-});
+    if(error){
 
+        operationsBox.innerHTML =
+            '<span class="err">'+
+            esc(error.message)+
+            '</span>';
 
-if(error){
+        return;
+    }
 
-operationsBox.innerHTML =
-'<span class="err">'+
-esc(error.message)+
-'</span>';
+    if(!data || !data.length){
 
-return;
+        operationsBox.innerHTML =
+            '<p class="muted">Nenhuma operação cadastrada.</p>';
 
-}
+        return;
+    }
 
+    const {data:teamData} =
+        await sb
+        .from('teams')
+        .select('id,operation_id,active');
 
-if(!data || !data.length){
+    operationsBox.innerHTML = '';
 
-operationsBox.innerHTML =
-'<p class="muted">Nenhuma operação cadastrada.</p>';
+    data.forEach(operation=>{
 
-return;
+        const operationPeople =
+            (teamData || []).filter(
+                p =>
+                p.operation_id === operation.id &&
+                p.active !== false
+            );
 
-}
+        const publicLink =
+            base()+
+            'public.html?t='+
+            operation.public_token;
 
+        const finished =
+            operation.status === 'finished';
 
-const {data:teamData} =
-await sb
-.from('teams')
-.select('id,operation_id,active');
+        const div =
+            document.createElement('div');
 
+        div.className = 'team';
 
-operationsBox.innerHTML = '';
+        div.innerHTML = `
 
+        <h3 style="margin-bottom:4px">
+            ${esc(operation.name)}
+        </h3>
 
-data.forEach(operation=>{
+        <span class="status-badge ${finished ? 'status-finished' : 'status-active'}">
+            ${finished ? 'FINALIZADA' : 'EM ANDAMENTO'}
+        </span>
 
-const operationPeople =
-(teamData || []).filter(
-p =>
-p.operation_id === operation.id &&
-p.active !== false
-);
+        <div>
+            <strong>Data:</strong>
+            ${formatDate(operation.operation_date)}
+        </div>
 
+        <div>
+            <strong>Contratante:</strong>
+            ${esc(operation.client_name || '-')}
+        </div>
 
-const publicLink =
-base()+
-'public.html?t='+
-operation.public_token;
+        <div>
+            <strong>Área:</strong>
+            ${esc(operation.area_name || '-')}
+        </div>
 
+        <div>
+            <strong>Pessoas:</strong>
+            ${operationPeople.length}
+        </div>
 
-const finished =
-operation.status === 'finished';
+        <div class="operation-actions">
 
+            <button
+                class="openOperation"
+                data-id="${esc(operation.id)}">
+                GERENCIAR
+            </button>
 
-const div =
-document.createElement('div');
+            <button
+                class="secondary openMap"
+                data-link="${esc(publicLink)}">
+                VER MAPA
+            </button>
 
-div.className = 'team';
+            <button
+                class="secondary copyOperation"
+                data-link="${esc(publicLink)}">
+                COPIAR LINK
+            </button>
 
-div.innerHTML = `
+        </div>
+        `;
 
-<h3 style="margin-bottom:4px">
-${esc(operation.name)}
-</h3>
-
-<span class="status-badge ${finished ? 'status-finished' : 'status-active'}">
-${finished ? 'FINALIZADA' : 'EM ANDAMENTO'}
-</span>
-
-<div>
-<strong>Data:</strong>
-${formatDate(operation.operation_date)}
-</div>
-
-<div>
-<strong>Contratante:</strong>
-${esc(operation.client_name || '-')}
-</div>
-
-<div>
-<strong>Área:</strong>
-${esc(operation.area_name || '-')}
-</div>
-
-<div>
-<strong>Pessoas:</strong>
-${operationPeople.length}
-</div>
-
-<div class="operation-actions">
-
-<button
-class="openOperation"
-data-id="${esc(operation.id)}">
-Abrir / Gerenciar
-</button>
-
-<button
-class="secondary openMap"
-data-link="${esc(publicLink)}">
-Abrir mapa
-</button>
-
-<button
-class="secondary copyOperation"
-data-link="${esc(publicLink)}">
-Copiar link público
-</button>
-
-</div>
-
-`;
-
-operationsBox.appendChild(div);
-
-});
-
+        operationsBox.appendChild(div);
+    });
 }
 
 
@@ -537,41 +994,33 @@ operationsBox.addEventListener(
 'click',
 async e=>{
 
-if(
-e.target.classList.contains('openOperation')
-){
+    if(
+        e.target.classList.contains('openOperation')
+    ){
+        await openOperation(
+            e.target.dataset.id
+        );
+    }
 
-await openOperation(
-e.target.dataset.id
-);
+    if(
+        e.target.classList.contains('openMap')
+    ){
+        window.open(
+            e.target.dataset.link,
+            '_blank'
+        );
+    }
 
-}
+    if(
+        e.target.classList.contains('copyOperation')
+    ){
 
+        await navigator.clipboard.writeText(
+            e.target.dataset.link
+        );
 
-if(
-e.target.classList.contains('openMap')
-){
-
-window.open(
-e.target.dataset.link,
-'_blank'
-);
-
-}
-
-
-if(
-e.target.classList.contains('copyOperation')
-){
-
-await navigator.clipboard.writeText(
-e.target.dataset.link
-);
-
-alert('Link público copiado.');
-
-}
-
+        alert('Link público copiado.');
+    }
 });
 
 
@@ -581,93 +1030,72 @@ alert('Link público copiado.');
 
 async function openOperation(id){
 
-const {data,error} =
-await sb
-.from('operations')
-.select('*')
-.eq('id',id)
-.single();
+    const {data,error} =
+        await sb
+        .from('operations')
+        .select('*')
+        .eq('id',id)
+        .single();
 
+    if(error){
 
-if(error){
+        alert(error.message);
+        return;
+    }
 
-alert(error.message);
+    op = data;
 
-return;
+    box.hidden = false;
 
-}
+    document.querySelector('#opname')
+        .textContent =
+        data.name;
 
+    document.querySelector('#opdate')
+        .textContent =
+        formatDate(
+            data.operation_date
+        );
 
-op = data;
+    document.querySelector('#opclient')
+        .textContent =
+        data.client_name || '-';
 
-box.hidden = false;
+    document.querySelector('#oparea')
+        .textContent =
+        data.area_name || '-';
 
+    document.querySelector('#publink')
+        .textContent =
+        base()+
+        'public.html?t='+
+        data.public_token;
 
-document.querySelector('#opname')
-.textContent =
-data.name;
+    const finished =
+        data.status === 'finished';
 
+    document.querySelector('#opstatus')
+        .innerHTML = `
 
-document.querySelector('#opdate')
-.textContent =
-formatDate(
-data.operation_date
-);
+        <span class="status-badge ${finished ? 'status-finished' : 'status-active'}">
+            ${finished ? 'FINALIZADA' : 'EM ANDAMENTO'}
+        </span>
+        `;
 
+    document.querySelector('#addPersonArea')
+        .style.display =
+        finished ? 'none' : 'block';
 
-document.querySelector('#opclient')
-.textContent =
-data.client_name || '-';
+    document.querySelector('#finishOperation')
+        .style.display =
+        finished ? 'none' : 'inline-block';
 
+    await loadPeople();
 
-document.querySelector('#oparea')
-.textContent =
-data.area_name || '-';
-
-
-document.querySelector('#publink')
-.textContent =
-base()+
-'public.html?t='+
-data.public_token;
-
-
-const finished =
-data.status === 'finished';
-
-
-document.querySelector('#opstatus')
-.innerHTML = `
-
-<span class="status-badge ${finished ? 'status-finished' : 'status-active'}">
-
-${finished ? 'FINALIZADA' : 'EM ANDAMENTO'}
-
-</span>
-
-`;
-
-
-/* Não adicionamos pessoas em operação finalizada */
-
-document.querySelector('#addPersonArea')
-.style.display =
-finished ? 'none' : 'block';
-
-
-document.querySelector('#finishOperation')
-.style.display =
-finished ? 'none' : 'inline-block';
-
-
-await loadPeople();
-
-
-box.scrollIntoView({
-behavior:'smooth',
-block:'start'
-});
-
+    box.scrollIntoView({
+        behavior:'smooth',
+        block:'start'
+    });
 }
 
 
@@ -677,43 +1105,36 @@ block:'start'
 
 async function loadPeople(){
 
-if(!op)
-return;
+    if(!op)
+        return;
 
+    const {data,error} =
+        await sb
+        .from('teams')
+        .select('*')
+        .eq('operation_id',op.id)
+        .eq('active',true)
+        .order('created_at',{
+            ascending:true
+        });
 
-const {data,error} =
-await sb
-.from('teams')
-.select('*')
-.eq('operation_id',op.id)
-.eq('active',true)
-.order('created_at',{
-ascending:true
-});
+    if(error){
 
+        people.innerHTML =
+            '<span class="err">'+
+            esc(error.message)+
+            '</span>';
 
-if(error){
+        return;
+    }
 
-people.innerHTML =
-'<span class="err">'+
-esc(error.message)+
-'</span>';
+    people.innerHTML = '';
 
-return;
+    (data || []).forEach(
+        person => renderPerson(person)
+    );
 
-}
-
-
-people.innerHTML = '';
-
-
-(data || []).forEach(
-person => renderPerson(person)
-);
-
-
-renderSummary();
-
+    renderSummary();
 }
 
 
@@ -725,97 +1146,80 @@ document.querySelector('#addperson')
 .onclick =
 async()=>{
 
-if(!op)
-return;
+    if(!op)
+        return;
 
+    if(op.status === 'finished'){
 
-if(op.status === 'finished'){
+        alert(
+            'Esta operação já foi finalizada.'
+        );
 
-alert(
-'Esta operação já foi finalizada.'
-);
+        return;
+    }
 
-return;
+    const input =
+        document.querySelector('#personname');
 
-}
+    const n =
+        input.value.trim();
 
+    if(!n)
+        return;
 
-const input =
-document.querySelector('#personname');
+    const {data:allPeople,error:countError} =
+        await sb
+        .from('teams')
+        .select('id')
+        .eq('operation_id',op.id);
 
-const n =
-input.value.trim();
+    if(countError){
 
-if(!n)
-return;
+        alert(countError.message);
+        return;
+    }
 
+    const color =
+        chooseColor(
+            (allPeople || []).length
+        );
 
-const {data:allPeople,error:countError} =
-await sb
-.from('teams')
-.select('id')
-.eq('operation_id',op.id);
+    const track_token =
+        token();
 
+    const {data,error} =
+        await sb
+        .from('teams')
+        .insert({
 
-if(countError){
+            operation_id:
+                op.id,
 
-alert(countError.message);
+            name:n,
 
-return;
+            track_token:
+                track_token,
 
-}
+            color:
+                color,
 
+            active:true
 
-const color =
-chooseColor(
-(allPeople || []).length
-);
+        })
+        .select()
+        .single();
 
+    if(error){
 
-const track_token =
-token();
+        alert(error.message);
+        return;
+    }
 
+    input.value = '';
 
-const {data,error} =
-await sb
-.from('teams')
-.insert({
-
-operation_id:
-op.id,
-
-name:n,
-
-track_token:
-track_token,
-
-color:
-color,
-
-active:true
-
-})
-.select()
-.single();
-
-
-if(error){
-
-alert(error.message);
-
-return;
-
-}
-
-
-input.value = '';
-
-renderPerson(data);
-
-renderSummary();
-
-await loadOperations();
-
+    renderPerson(data);
+    renderSummary();
+    await loadOperations();
 };
 
 
@@ -825,78 +1229,75 @@ await loadOperations();
 
 function renderPerson(data){
 
-const link =
-base()+
-'track.html?t='+
-data.track_token;
+    const link =
+        base()+
+        'track.html?t='+
+        data.track_token;
 
+    const div =
+        document.createElement('div');
 
-const div =
-document.createElement('div');
+    div.className =
+        'team person';
 
-div.className =
-'team person';
+    div.dataset.id =
+        data.id;
 
-div.dataset.id =
-data.id;
+    const removeButton =
+        op &&
+        op.status !== 'finished'
+        ? `
 
+        <button
+            class="secondary remove"
+            data-id="${esc(data.id)}"
+            data-name="${esc(data.name)}">
+            REMOVER
+        </button>
+        `
+        : '';
 
-const removeButton =
-op &&
-op.status !== 'finished'
-? `
+    div.innerHTML = `
 
-<button
-class="secondary remove"
-data-id="${esc(data.id)}"
-data-name="${esc(data.name)}">
-Remover pessoa
-</button>
+        <div style="
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin-bottom:10px">
 
-`
-: '';
+            <span style="
+                display:inline-block;
+                width:14px;
+                height:14px;
+                border-radius:50%;
+                box-shadow:0 0 0 4px ${esc(data.color || '#2563eb')}20;
+                background:${esc(data.color || '#2563eb')}">
+            </span>
 
+            <strong>
+                ${esc(data.name)}
+            </strong>
 
-div.innerHTML = `
+        </div>
 
-<div style="
-display:flex;
-align-items:center;
-gap:10px;
-margin-bottom:8px">
+        <code>
+            ${esc(link)}
+        </code>
 
-<span style="
-display:inline-block;
-width:18px;
-height:18px;
-border-radius:50%;
-background:${esc(data.color || '#2563eb')}">
-</span>
+        <div class="operation-actions">
 
-<strong>
-${esc(data.name)}
-</strong>
+            <button
+                class="secondary copy"
+                data-link="${esc(link)}">
+                COPIAR LINK INDIVIDUAL
+            </button>
 
-</div>
+            ${removeButton}
 
-<code>
-${esc(link)}
-</code>
+        </div>
+    `;
 
-<br><br>
-
-<button
-class="secondary copy"
-data-link="${esc(link)}">
-Copiar link individual
-</button>
-
-${removeButton}
-
-`;
-
-people.appendChild(div);
-
+    people.appendChild(div);
 }
 
 
@@ -908,67 +1309,54 @@ people.addEventListener(
 'click',
 async e=>{
 
+    if(
+        e.target.classList.contains('copy')
+    ){
 
-if(
-e.target.classList.contains('copy')
-){
+        await navigator.clipboard.writeText(
+            e.target.dataset.link
+        );
 
-await navigator.clipboard.writeText(
-e.target.dataset.link
-);
+        alert('Link individual copiado.');
+    }
 
-alert('Link individual copiado.');
+    if(
+        e.target.classList.contains('remove')
+    ){
 
-}
+        const id =
+            e.target.dataset.id;
 
+        const personName =
+            e.target.dataset.name;
 
-if(
-e.target.classList.contains('remove')
-){
+        const ok =
+            confirm(
+                'Remover '+personName+
+                ' desta operação?\n\n'+
+                'O percurso já realizado será preservado.'
+            );
 
-const id =
-e.target.dataset.id;
+        if(!ok)
+            return;
 
-const personName =
-e.target.dataset.name;
+        const {error} =
+            await sb
+            .from('teams')
+            .update({
+                active:false
+            })
+            .eq('id',id);
 
+        if(error){
 
-const ok =
-confirm(
-'Remover '+personName+
-' desta operação?\n\n'+
-'O percurso já realizado será preservado.'
-);
+            alert(error.message);
+            return;
+        }
 
-
-if(!ok)
-return;
-
-
-const {error} =
-await sb
-.from('teams')
-.update({
-active:false
-})
-.eq('id',id);
-
-
-if(error){
-
-alert(error.message);
-
-return;
-
-}
-
-
-await loadPeople();
-
-await loadOperations();
-
-}
-
+        await loadPeople();
+        await loadOperations();
+    }
 });
 
 
@@ -980,13 +1368,12 @@ document.querySelector('#copyPublic')
 .onclick =
 async()=>{
 
-await navigator.clipboard.writeText(
-document.querySelector('#publink')
-.textContent
-);
+    await navigator.clipboard.writeText(
+        document.querySelector('#publink')
+        .textContent
+    );
 
-alert('Link público copiado.');
-
+    alert('Link público copiado.');
 };
 
 
@@ -994,12 +1381,11 @@ document.querySelector('#openPublic')
 .onclick =
 ()=>{
 
-window.open(
-document.querySelector('#publink')
-.textContent,
-'_blank'
-);
-
+    window.open(
+        document.querySelector('#publink')
+        .textContent,
+        '_blank'
+    );
 };
 
 
@@ -1011,50 +1397,40 @@ document.querySelector('#finishOperation')
 .onclick =
 async()=>{
 
-if(!op)
-return;
+    if(!op)
+        return;
 
+    const ok =
+        confirm(
+            'FINALIZAR ESTA OPERAÇÃO?\n\n'+
+            'Os percursos serão preservados.\n'+
+            'Qualquer percurso ainda ativo será encerrado.\n\n'+
+            'Esta operação ficará registrada no histórico.'
+        );
 
-const ok =
-confirm(
-'FINALIZAR ESTA OPERAÇÃO?\n\n'+
-'Os percursos serão preservados.\n'+
-'Qualquer percurso ainda ativo será encerrado.\n\n'+
-'Esta operação ficará registrada no histórico.'
-);
+    if(!ok)
+        return;
 
+    const {error} =
+        await sb.rpc(
+            'finish_operation',
+            {
+                p_operation:op.id
+            }
+        );
 
-if(!ok)
-return;
+    if(error){
 
+        alert(error.message);
+        return;
+    }
 
-const {error} =
-await sb.rpc(
-'finish_operation',
-{
-p_operation:op.id
-}
-);
+    alert(
+        'Operação finalizada com sucesso.'
+    );
 
-
-if(error){
-
-alert(error.message);
-
-return;
-
-}
-
-
-alert(
-'Operação finalizada com sucesso.'
-);
-
-
-await loadOperations();
-
-await openOperation(op.id);
-
+    await loadOperations();
+    await openOperation(op.id);
 };
 
 
@@ -1066,155 +1442,127 @@ document.querySelector('#clearRoutes')
 .onclick =
 async()=>{
 
-if(!op)
-return;
+    if(!op)
+        return;
 
+    const first =
+        confirm(
+            'ATENÇÃO!\n\n'+
+            'Isto apagará TODOS os percursos GPS desta operação.\n\n'+
+            'A operação e as pessoas continuarão cadastradas.\n\n'+
+            'Deseja continuar?'
+        );
 
-const first =
-confirm(
-'ATENÇÃO!\n\n'+
-'Isto apagará TODOS os percursos GPS desta operação.\n\n'+
-'A operação e as pessoas continuarão cadastradas.\n\n'+
-'Deseja continuar?'
-);
+    if(!first)
+        return;
 
+    const typed =
+        prompt(
+            'Para confirmar, digite exatamente:\n\nLIMPAR'
+        );
 
-if(!first)
-return;
+    if(typed !== 'LIMPAR'){
 
+        alert(
+            'Confirmação incorreta. Nada foi apagado.'
+        );
 
-const typed =
-prompt(
-'Para confirmar, digite exatamente:\n\nLIMPAR'
-);
+        return;
+    }
 
+    const {error} =
+        await sb.rpc(
+            'clear_operation_routes',
+            {
+                p_operation:op.id
+            }
+        );
 
-if(typed !== 'LIMPAR'){
+    if(error){
 
-alert(
-'Confirmação incorreta. Nada foi apagado.'
-);
+        alert(error.message);
+        return;
+    }
 
-return;
+    alert(
+        'Percursos apagados. A operação e as pessoas foram mantidas.'
+    );
 
-}
-
-
-const {error} =
-await sb.rpc(
-'clear_operation_routes',
-{
-p_operation:op.id
-}
-);
-
-
-if(error){
-
-alert(error.message);
-
-return;
-
-}
-
-
-alert(
-'Percursos apagados. A operação e as pessoas foram mantidas.'
-);
-
-
-await loadOperations();
-
-await openOperation(op.id);
-
+    await loadOperations();
+    await openOperation(op.id);
 };
 
 
 /* =====================================================
-   EXCLUIR OPERAÇÃO DEFINITIVAMENTE
+   EXCLUIR OPERAÇÃO
 ===================================================== */
 
 document.querySelector('#deleteOperation')
 .onclick =
 async()=>{
 
-if(!op)
-return;
+    if(!op)
+        return;
 
+    const operationName =
+        op.name;
 
-const operationName =
-op.name;
+    const first =
+        confirm(
+            'EXCLUIR DEFINITIVAMENTE "'+
+            operationName+
+            '"?\n\n'+
+            'Serão apagados:\n'+
+            '- a operação\n'+
+            '- as pessoas\n'+
+            '- todas as sessões\n'+
+            '- todos os pontos GPS\n\n'+
+            'ESTA AÇÃO NÃO PODE SER DESFEITA.'
+        );
 
+    if(!first)
+        return;
 
-const first =
-confirm(
-'EXCLUIR DEFINITIVAMENTE "'+
-operationName+
-'"?\n\n'+
-'Serão apagados:\n'+
-'- a operação\n'+
-'- as pessoas\n'+
-'- todas as sessões\n'+
-'- todos os pontos GPS\n\n'+
-'ESTA AÇÃO NÃO PODE SER DESFEITA.'
-);
+    const typed =
+        prompt(
+            'Para confirmar a exclusão definitiva,\n'+
+            'digite exatamente:\n\nEXCLUIR'
+        );
 
+    if(typed !== 'EXCLUIR'){
 
-if(!first)
-return;
+        alert(
+            'Confirmação incorreta. Nada foi excluído.'
+        );
 
+        return;
+    }
 
-const typed =
-prompt(
-'Para confirmar a exclusão definitiva,\n'+
-'digite exatamente:\n\nEXCLUIR'
-);
+    const operationId =
+        op.id;
 
+    const {error} =
+        await sb.rpc(
+            'delete_operation',
+            {
+                p_operation:operationId
+            }
+        );
 
-if(typed !== 'EXCLUIR'){
+    if(error){
 
-alert(
-'Confirmação incorreta. Nada foi excluído.'
-);
+        alert(error.message);
+        return;
+    }
 
-return;
+    alert(
+        'Operação excluída definitivamente.'
+    );
 
-}
+    op = null;
+    box.hidden = true;
 
-
-const operationId =
-op.id;
-
-
-const {error} =
-await sb.rpc(
-'delete_operation',
-{
-p_operation:operationId
-}
-);
-
-
-if(error){
-
-alert(error.message);
-
-return;
-
-}
-
-
-alert(
-'Operação excluída definitivamente.'
-);
-
-
-op = null;
-
-box.hidden = true;
-
-await loadOperations();
-
+    await loadOperations();
 };
 
 
@@ -1224,29 +1572,19 @@ await loadOperations();
 
 function renderSummary(){
 
-const total =
-people.querySelectorAll(
-'.person'
-).length;
+    const total =
+        people.querySelectorAll(
+            '.person'
+        ).length;
 
+    summary.innerHTML = `
 
-summary.innerHTML = `
-
-<div class="card">
-
-<strong>
-Resumo da operação
-</strong>
-
-<br>
-
-Pessoas cadastradas:
-<strong>${total}</strong>
-
-</div>
-
-`;
-
+        <div class="card">
+            <strong>${total}</strong>
+            ${total === 1 ? ' pessoa cadastrada' : ' pessoas cadastradas'}
+            nesta operação.
+        </div>
+    `;
 }
 
 
