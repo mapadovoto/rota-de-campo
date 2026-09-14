@@ -9,72 +9,509 @@
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-<title>Acompanhamento — Rota de Campo</title>
+<title>Mapa do Voto — Acompanhamento</title>
 
 <style>
 
+/* =====================================================
+   MAPA DO VOTO — PAINEL PÚBLICO
+===================================================== */
+
+body{
+    background:#f3f6f8;
+    color:#10233b;
+}
+
+/* CABEÇALHO */
+
+.public-header{
+    background:
+        linear-gradient(
+            135deg,
+            #07364c 0%,
+            #003249 48%,
+            #005148 100%
+        );
+    border-bottom:5px solid #00b66a;
+    color:white;
+}
+
+.public-header-inner{
+    max-width:1100px;
+    margin:auto;
+    min-height:135px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    padding:22px 25px;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:18px;
+}
+
+.brand-logo{
+    width:90px;
+    height:90px;
+    object-fit:contain;
+}
+
+.brand-text h1{
+    margin:0;
+    font-size:30px;
+    line-height:1.1;
+    color:white;
+}
+
+.brand-text p{
+    margin:7px 0 0;
+    color:#d6e7ec;
+    font-size:15px;
+}
+
+.brand-line{
+    width:72px;
+    height:5px;
+    background:#00b66a;
+    border-radius:999px;
+    margin-top:13px;
+}
+
+.live-badge{
+    background:rgba(0,182,106,.15);
+    border:1px solid rgba(94,234,162,.55);
+    color:#d7ffeb;
+    padding:10px 15px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.live-dot{
+    display:inline-block;
+    width:8px;
+    height:8px;
+    background:#22d67f;
+    border-radius:50%;
+    margin-right:7px;
+}
+
+
+/* CONTEÚDO */
+
+.public-main{
+    max-width:1100px;
+    margin:auto;
+    padding:28px 20px 45px;
+}
+
+.panel{
+    background:white;
+    border:1px solid #dce4e9;
+    border-radius:18px;
+    box-shadow:0 8px 24px rgba(15,35,55,.06);
+    margin-bottom:20px;
+}
+
+
+/* OPERAÇÃO */
+
+.operation-panel{
+    padding:25px 28px;
+}
+
+.operation-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+}
+
+.operation-title-area h2{
+    margin:0;
+    font-size:27px;
+    color:#10233b;
+}
+
+.operation-subtitle{
+    margin-top:6px;
+    color:#697586;
+    font-size:14px;
+}
+
+.operation-status{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:7px 12px;
+    border-radius:999px;
+    background:#e9fbf2;
+    border:1px solid #b4efd0;
+    color:#087849;
+    font-size:12px;
+    font-weight:800;
+}
+
+.operation-info{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:22px;
+    padding-top:20px;
+    border-top:1px solid #e7ecef;
+}
+
+.info-box{
+    min-width:0;
+}
+
+.info-label{
+    display:block;
+    color:#7b8794;
+    text-transform:uppercase;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.04em;
+    margin-bottom:5px;
+}
+
+.info-value{
+    display:block;
+    font-size:15px;
+    font-weight:700;
+    color:#26384b;
+}
+
+
+/* ESTATÍSTICAS */
+
 .dashboard{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:10px;
-margin-top:15px;
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:11px;
+    margin-top:23px;
 }
 
 .stat{
-background:#f5f7fb;
-border:1px solid #dde3ec;
-border-radius:10px;
-padding:12px;
+    position:relative;
+    overflow:hidden;
+    background:#f7f9fb;
+    border:1px solid #e0e7ec;
+    border-radius:14px;
+    padding:16px 14px;
+    min-height:92px;
+}
+
+.stat::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:3px;
+    background:#d4dce2;
+}
+
+.stat.highlight::before{
+    background:#00ae68;
+}
+
+.stat-label{
+    display:block;
+    color:#697586;
+    font-size:12px;
+    font-weight:700;
+    min-height:30px;
 }
 
 .stat strong{
-display:block;
-font-size:1.3rem;
-margin-top:3px;
+    display:block;
+    font-size:24px;
+    line-height:1.1;
+    margin-top:7px;
+    color:#10233b;
+}
+
+
+/* MAPA */
+
+.map-panel{
+    padding:0;
+    overflow:hidden;
+}
+
+.map-heading{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    padding:20px 24px;
+    border-bottom:1px solid #e4eaee;
+}
+
+.map-heading h2{
+    margin:0;
+    font-size:20px;
+}
+
+.map-heading p{
+    margin:4px 0 0;
+    color:#697586;
+    font-size:13px;
+}
+
+.map-update{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#087849;
+    background:#ecfbf4;
+    border:1px solid #c2efd8;
+    border-radius:999px;
+    padding:7px 11px;
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.update-dot{
+    width:7px;
+    height:7px;
+    background:#00ad68;
+    border-radius:50%;
+}
+
+.map{
+    height:600px;
+    width:100%;
+    border:0;
+    border-radius:0;
+}
+
+
+/* PESSOAS */
+
+.people-panel{
+    padding:24px 28px;
+}
+
+.people-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    margin-bottom:5px;
+}
+
+.people-header h2{
+    margin:0;
+    font-size:21px;
+}
+
+.people-header span{
+    color:#697586;
+    font-size:13px;
+}
+
+.people-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+    margin-top:18px;
 }
 
 .person-public{
-padding:14px 0;
-border-top:1px solid #e5e9f0;
-}
-
-.person-public:first-child{
-border-top:0;
+    border:1px solid #e0e7ec;
+    border-radius:14px;
+    padding:16px 17px;
+    background:#fbfcfd;
 }
 
 .person-title{
-display:flex;
-align-items:center;
-gap:9px;
-font-size:1.05rem;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:15px;
+    flex-wrap:wrap;
+}
+
+.person-name{
+    font-size:16px;
+    color:#10233b;
 }
 
 .color-dot{
-width:16px;
-height:16px;
-border-radius:50%;
-display:inline-block;
-flex:0 0 16px;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    display:inline-block;
+    flex:0 0 14px;
+    box-shadow:0 0 0 3px rgba(0,0,0,.04);
+}
+
+.person-status{
+    margin-left:auto;
+    border-radius:999px;
+    padding:5px 9px;
+    font-size:11px;
+    font-weight:800;
 }
 
 .status-active{
-color:#167447;
-font-weight:700;
+    background:#e8fbf1;
+    color:#087849;
+    border:1px solid #b7ebd0;
 }
 
 .status-ended{
-color:#475467;
-font-weight:700;
+    background:#edf1f4;
+    color:#475467;
+    border:1px solid #d8dee4;
 }
 
 .status-waiting{
-color:#667085;
-font-weight:700;
+    background:#fff7e6;
+    color:#956000;
+    border:1px solid #f3dfad;
 }
 
 .person-details{
-margin-top:7px;
-line-height:1.6;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-top:15px;
+}
+
+.person-stat{
+    border-top:1px solid #e5eaee;
+    padding-top:10px;
+}
+
+.person-stat span{
+    display:block;
+    font-size:10px;
+    text-transform:uppercase;
+    font-weight:800;
+    color:#8a95a2;
+    margin-bottom:3px;
+}
+
+.person-stat strong{
+    font-size:13px;
+    color:#344054;
+}
+
+.public-note{
+    margin-top:20px;
+    background:#f5f8fa;
+    border-radius:12px;
+    padding:13px 15px;
+    color:#697586;
+    font-size:12px;
+    line-height:1.55;
+}
+
+
+/* RODAPÉ */
+
+.public-footer{
+    text-align:center;
+    padding:5px 20px 35px;
+    color:#8b96a3;
+    font-size:12px;
+}
+
+
+/* RESPONSIVO */
+
+@media(max-width:900px){
+
+    .dashboard{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .people-grid{
+        grid-template-columns:1fr;
+    }
+
+}
+
+@media(max-width:650px){
+
+    .public-header-inner{
+        min-height:auto;
+        padding:18px;
+    }
+
+    .brand-logo{
+        width:67px;
+        height:67px;
+    }
+
+    .brand-text h1{
+        font-size:23px;
+    }
+
+    .brand-text p{
+        font-size:12px;
+    }
+
+    .live-badge{
+        display:none;
+    }
+
+    .public-main{
+        padding:15px 11px 30px;
+    }
+
+    .operation-panel,
+    .people-panel{
+        padding:19px 17px;
+    }
+
+    .operation-top{
+        display:block;
+    }
+
+    .operation-status{
+        margin-top:12px;
+    }
+
+    .operation-title-area h2{
+        font-size:23px;
+    }
+
+    .operation-info{
+        grid-template-columns:1fr;
+        gap:13px;
+    }
+
+    .dashboard{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .map-heading{
+        align-items:flex-start;
+        flex-direction:column;
+        padding:17px;
+    }
+
+    .map{
+        height:500px;
+    }
+
+    .person-details{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .person-status{
+        margin-left:0;
+    }
+
 }
 
 </style>
@@ -83,13 +520,58 @@ line-height:1.6;
 
 <body>
 
-<header>
-<h1>Acompanhamento em tempo real</h1>
-</header>
 
-<main>
+<!-- =====================================================
+     CABEÇALHO
+===================================================== -->
 
-<div class="card">
+<div class="public-header">
+
+<div class="public-header-inner">
+
+<div class="brand">
+
+<img
+src="mapa-do-voto-logo.png"
+alt="Mapa do Voto"
+class="brand-logo">
+
+<div class="brand-text">
+
+<h1>Mapa do Voto</h1>
+
+<p>Acompanhamento de Campo</p>
+
+<div class="brand-line"></div>
+
+</div>
+
+</div>
+
+
+<div class="live-badge">
+
+<span class="live-dot"></span>
+
+ACOMPANHAMENTO EM TEMPO REAL
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- =====================================================
+     CONTEÚDO
+===================================================== -->
+
+<main class="public-main">
+
+
+<!-- OPERAÇÃO -->
+
+<div class="panel operation-panel">
 
 <div id="head">
 Carregando operação...
@@ -100,22 +582,79 @@ Carregando operação...
 </div>
 
 
-<div id="map" class="map"></div>
+<!-- MAPA -->
 
+<div class="panel map-panel">
 
-<div class="card">
+<div class="map-heading">
 
-<h2>Pessoas / Panfleteiros</h2>
+<div>
 
-<div id="legend">
-Carregando...
+<h2>Mapa da operação</h2>
+
+<p>
+Visualização dos percursos registrados em campo
+</p>
+
 </div>
 
-<p class="muted">
-Atualização automática a cada 10 segundos.
-Os trajetos representam os pontos GPS registrados
-pelo aparelho durante o percurso.
-</p>
+<div class="map-update">
+
+<span class="update-dot"></span>
+
+Atualização automática
+
+</div>
+
+</div>
+
+<div id="map" class="map"></div>
+
+</div>
+
+
+<!-- PESSOAS -->
+
+<div class="panel people-panel">
+
+<div class="people-header">
+
+<div>
+
+<h2>Equipe em campo</h2>
+
+</div>
+
+<span>
+Detalhamento individual dos percursos
+</span>
+
+</div>
+
+
+<div id="legend" class="people-grid">
+
+Carregando...
+
+</div>
+
+
+<div class="public-note">
+
+<strong>Sobre os dados:</strong>
+o painel é atualizado automaticamente a cada 10 segundos.
+Os trajetos representam os pontos GPS registrados pelo
+aparelho durante cada percurso. A distância apresentada
+é calculada com base nesses pontos.
+
+</div>
+
+</div>
+
+
+<div class="public-footer">
+
+Mapa do Voto • Sistema de acompanhamento de operações em campo
 
 </div>
 
@@ -257,15 +796,6 @@ return 0;
 
 let total = 0;
 
-
-/*
-Agrupamos os pontos por sessão.
-
-Isso evita criar uma distância falsa
-entre o final de uma sessão e o começo
-de outra.
-*/
-
 const sessions = {};
 
 team.points.forEach(p=>{
@@ -300,7 +830,6 @@ points[i]
 
 });
 
-
 return total;
 
 }
@@ -317,8 +846,6 @@ team.color ||
 '#2563eb';
 
 
-/* Remove desenho anterior */
-
 if(layers[team.id]){
 
 layers[team.id]
@@ -331,8 +858,6 @@ map.removeLayer(layer);
 
 layers[team.id] = [];
 
-
-/* Agrupar pontos por sessão */
 
 const sessionPoints = {};
 
@@ -352,8 +877,6 @@ sessionPoints[sid].push(p);
 
 let lastPoint = null;
 
-
-/* Uma linha para cada sessão */
 
 Object.values(sessionPoints)
 .forEach(points=>{
@@ -390,8 +913,6 @@ latlngs.length-1
 });
 
 
-/* Marcador da posição mais recente */
-
 if(lastPoint){
 
 const marker =
@@ -407,7 +928,11 @@ weight:3
 )
 .addTo(map)
 .bindTooltip(
-team.name
+team.name,
+{
+direction:'top',
+offset:[0,-8]
+}
 );
 
 
@@ -472,32 +997,82 @@ data.teams || [];
 
 
 /* =====================================================
-   CABEÇALHO
+   CABEÇALHO DA OPERAÇÃO
 ===================================================== */
+
+const operationFinished =
+operation.status === 'finished';
+
 
 document.querySelector('#head')
 .innerHTML = `
+
+<div class="operation-top">
+
+<div class="operation-title-area">
 
 <h2>
 ${esc(operation.name)}
 </h2>
 
-<p>
+<div class="operation-subtitle">
+Informações gerais da operação
+</div>
 
-<strong>Data:</strong>
+</div>
+
+<div class="operation-status">
+
+<span class="live-dot"></span>
+
+${operationFinished ? 'OPERAÇÃO FINALIZADA' : 'OPERAÇÃO EM ANDAMENTO'}
+
+</div>
+
+</div>
+
+
+<div class="operation-info">
+
+<div class="info-box">
+
+<span class="info-label">
+Data da operação
+</span>
+
+<span class="info-value">
 ${formatDate(operation.operation_date)}
+</span>
 
-&nbsp; · &nbsp;
+</div>
 
-<strong>Contratante:</strong>
+
+<div class="info-box">
+
+<span class="info-label">
+Contratante
+</span>
+
+<span class="info-value">
 ${esc(operation.client_name || '-')}
+</span>
 
-&nbsp; · &nbsp;
+</div>
 
-<strong>Área:</strong>
+
+<div class="info-box">
+
+<span class="info-label">
+Área
+</span>
+
+<span class="info-value">
 ${esc(operation.area_name || '-')}
+</span>
 
-</p>
+</div>
+
+</div>
 
 `;
 
@@ -529,7 +1104,6 @@ distance;
 if(team.active){
 
 activeCount++;
-
 startedCount++;
 
 }
@@ -538,7 +1112,6 @@ team.started_at
 ){
 
 endedCount++;
-
 startedCount++;
 
 }
@@ -557,45 +1130,45 @@ document.querySelector('#generalSummary')
 <div class="dashboard">
 
 <div class="stat">
-Pessoas
-<strong>
-${teams.length}
-</strong>
+<span class="stat-label">
+Pessoas cadastradas
+</span>
+<strong>${teams.length}</strong>
 </div>
 
 <div class="stat">
+<span class="stat-label">
 Iniciaram
-<strong>
-${startedCount}
-</strong>
+</span>
+<strong>${startedCount}</strong>
 </div>
 
-<div class="stat">
+<div class="stat highlight">
+<span class="stat-label">
 Em campo
-<strong>
-${activeCount}
-</strong>
+</span>
+<strong>${activeCount}</strong>
 </div>
 
 <div class="stat">
+<span class="stat-label">
 Encerraram
-<strong>
-${endedCount}
-</strong>
+</span>
+<strong>${endedCount}</strong>
 </div>
 
 <div class="stat">
+<span class="stat-label">
 Aguardando
-<strong>
-${waitingCount}
-</strong>
+</span>
+<strong>${waitingCount}</strong>
 </div>
 
-<div class="stat">
+<div class="stat highlight">
+<span class="stat-label">
 Distância total
-<strong>
-${fmtKm(totalDistance)}
-</strong>
+</span>
+<strong>${fmtKm(totalDistance)}</strong>
 </div>
 
 </div>
@@ -633,7 +1206,7 @@ getLastSession(team);
 
 
 let statusText =
-'AGUARDANDO INÍCIO';
+'AGUARDANDO';
 
 let statusClass =
 'status-waiting';
@@ -642,7 +1215,7 @@ let statusClass =
 if(team.active){
 
 statusText =
-'🟢 EM CAMPO';
+'EM CAMPO';
 
 statusClass =
 'status-active';
@@ -651,7 +1224,7 @@ statusClass =
 else if(team.started_at){
 
 statusText =
-'✓ ENCERRADO';
+'ENCERRADO';
 
 statusClass =
 'status-ended';
@@ -709,12 +1282,12 @@ class="color-dot"
 style="background:${esc(team.color || '#2563eb')}">
 </span>
 
-<strong>
+<strong class="person-name">
 ${esc(team.name)}
 </strong>
 
 <span
-class="${statusClass}">
+class="person-status ${statusClass}">
 ${statusText}
 </span>
 
@@ -723,23 +1296,25 @@ ${statusText}
 
 <div class="person-details">
 
-<strong>Distância:</strong>
-${fmtKm(distance)}
+<div class="person-stat">
+<span>Distância</span>
+<strong>${fmtKm(distance)}</strong>
+</div>
 
-&nbsp; | &nbsp;
+<div class="person-stat">
+<span>Início</span>
+<strong>${startTime}</strong>
+</div>
 
-<strong>Início:</strong>
-${startTime}
+<div class="person-stat">
+<span>Fim</span>
+<strong>${endTime}</strong>
+</div>
 
-&nbsp; | &nbsp;
-
-<strong>Fim:</strong>
-${endTime}
-
-&nbsp; | &nbsp;
-
-<strong>Tempo:</strong>
-${duration}
+<div class="person-stat">
+<span>Tempo</span>
+<strong>${duration}</strong>
+</div>
 
 </div>
 
