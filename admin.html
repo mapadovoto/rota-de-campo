@@ -920,6 +920,11 @@ async function loadOperations(){
             'public.html?t='+
             operation.public_token;
 
+        const reportLink =
+            base()+
+            'relatorio.html?t='+
+            operation.public_token;
+
         const finished =
             operation.status === 'finished';
 
@@ -973,6 +978,12 @@ async function loadOperations(){
             </button>
 
             <button
+                class="secondary openReport"
+                data-link="${esc(reportLink)}">
+                RELATÓRIO
+            </button>
+
+            <button
                 class="secondary copyOperation"
                 data-link="${esc(publicLink)}">
                 COPIAR LINK
@@ -1004,6 +1015,15 @@ async e=>{
 
     if(
         e.target.classList.contains('openMap')
+    ){
+        window.open(
+            e.target.dataset.link,
+            '_blank'
+        );
+    }
+
+    if(
+        e.target.classList.contains('openReport')
     ){
         window.open(
             e.target.dataset.link,
