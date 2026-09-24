@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapa do Voto — Relatório da Operação</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--navy:#07364c;--green:#00a963;--ink:#10233b;--muted:#687586;--line:#dce4e9;--bg:#f3f6f8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+header{background:linear-gradient(135deg,#07364c,#003249 55%,#005148);border-bottom:5px solid var(--green);color:#fff}
+.head{max-width:1180px;margin:auto;padding:22px;display:flex;align-items:center;gap:16px}
+.logo{width:72px;height:72px;object-fit:contain}
+.head h1{margin:0;font-size:28px}.head p{margin:5px 0 0;color:#d9e7ec}
+main{max-width:1180px;margin:auto;padding:24px 18px 50px}
+.card{background:#fff;border:1px solid var(--line);border-radius:17px;box-shadow:0 7px 22px rgba(15,35,55,.06);margin-bottom:18px;padding:22px}
+.top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.top h2{margin:0 0 6px;font-size:27px}
+.badge{padding:8px 12px;border-radius:999px;background:#e9fbf2;color:#087849;font-weight:800;font-size:12px;white-space:nowrap}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;padding-top:17px;border-top:1px solid #e7ecef}
+.label{font-size:11px;text-transform:uppercase;color:#7b8794;font-weight:800;display:block;margin-bottom:4px}
+.value{font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:20px}
+.stat{background:#f7f9fb;border:1px solid #e0e7ec;border-radius:13px;padding:14px;min-height:82px}
+.stat span{display:block;color:var(--muted);font-size:12px;font-weight:700}.stat strong{display:block;font-size:22px;margin-top:7px}
+#map{height:520px;border-radius:13px}
+.section-title{margin:0 0 15px;font-size:20px}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:12px 10px;border-bottom:1px solid #e5eaee;text-align:left;font-size:14px}th{font-size:11px;text-transform:uppercase;color:#667586}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
+.status{font-weight:800;font-size:11px}.on{color:#087849}.off{color:#687586}
+.person{page-break-inside:avoid}.person-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.person-head h3{margin:0;font-size:20px}
+.person-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:14px}.person-stat{background:#f7f9fb;border:1px solid #e0e7ec;border-radius:11px;padding:11px}.person-stat span{font-size:11px;color:#687586;display:block}.person-stat strong{display:block;margin-top:5px}
+.person-map{height:360px;border-radius:12px}
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-bottom:18px}.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer;background:#07364c;color:white}.btn.green{background:#009e5b}
+.loading{text-align:center;padding:40px;color:#687586}.err{color:#b42318;font-weight:700}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.meta,.person-stats{grid-template-columns:1fr 1fr}#map{height:420px}}
+@media(max-width:520px){.top{display:block}.badge{display:inline-block;margin-top:12px}.meta,.person-stats{grid-template-columns:1fr}.head h1{font-size:22px}.logo{width:58px;height:58px}}
+@media print{
+ body{background:#fff}.actions{display:none}header{background:#07364c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ main{max-width:none;padding:12px}.card{box-shadow:none}.person{break-before:page}.leaflet-control-container{display:none}
+}
+</style>
+</head>
+<body>
+<header><div class="head"><img class="logo" src="mapa-do-voto-logo.png" alt="Mapa do Voto"><div><h1>MAPA DO VOTO</h1><p>Relatório técnico de operação em campo</p></div></div></header>
+<main>
+<div class="actions"><button class="btn" onclick="history.back()">VOLTAR</button><button class="btn green" onclick="window.print()">IMPRIMIR / SALVAR PDF</button></div>
+<div id="loading" class="card loading">Carregando relatório...</div>
+<div id="content" hidden>
+<section class="card" id="head"></section>
+<section class="card"><h2 class="section-title">Mapa geral da operação</h2><div id="map"></div></section>
+<section class="card"><h2 class="section-title">Resumo individual</h2><div class="table-wrap"><table><thead><tr><th>Pessoa</th><th>Status</th><th>Sessões</th><th>Pontos GPS</th><th>Distância</th><th>Tempo</th><th>Início</th><th>Fim</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+<div id="individuals"></div>
+</div>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+const pub=qs('t');
+const maps=[];
+function fdate(v){if(!v)return '-';return new Date(v+'T00:00:00').toLocaleDateString('pt-BR')}
+function ftime(v){if(!v)return '-';return new Date(v).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function fhours(v){const n=Number(v||0);const h=Math.floor(n/60),m=Math.round(n%60);return h?`${h}h ${m}min`:`${m} min`}
+function tile(m){L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(m)}
+function pointsOf(team){
+ const a=[];
+ (team.sessions||[]).forEach(s=>(s.points||[]).forEach(p=>{if(Number.isFinite(+p.lat)&&Number.isFinite(+p.lng))a.push([+p.lat,+p.lng])}));
+ if(!a.length)(team.points||[]).forEach(p=>{if(Number.isFinite(+p.lat)&&Number.isFinite(+p.lng))a.push([+p.lat,+p.lng])});
+ return a;
+}
+function draw(m,team){
+ const color=team.color||'#2563eb', all=[];
+ if(team.sessions?.length){
+   team.sessions.forEach(s=>{const pts=(s.points||[]).filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lng)).map(p=>[+p.lat,+p.lng]);if(pts.length){L.polyline(pts,{color,weight:5,opacity:.9}).addTo(m);all.push(...pts)}});
+ } else {
+   const pts=pointsOf(team);if(pts.length){L.polyline(pts,{color,weight:5,opacity:.9}).addTo(m);all.push(...pts)}
+ }
+ return all;
+}
+async function load(){
+ if(!pub){document.querySelector('#loading').innerHTML='<span class="err">Link de relatório inválido.</span>';return}
+ const {data,error}=await sb.rpc('get_public_operation',{p_token:pub});
+ if(error||!data){document.querySelector('#loading').innerHTML='<span class="err">Operação não encontrada.</span>';return}
+ const op=data.operation, teams=data.teams||[];
+ const [{data:report,error:rerr},{data:sum,error:serr}]=await Promise.all([
+   sb.rpc('get_operation_report',{p_operation_id:op.id}),
+   sb.rpc('get_operation_summary',{p_operation_id:op.id})
+ ]);
+ if(rerr||serr){document.querySelector('#loading').innerHTML='<span class="err">Não foi possível carregar os dados do relatório.</span>';return}
+ const summary=(sum||[])[0]||{}, byId=new Map((report||[]).map(r=>[r.team_id,r]));
+ document.querySelector('#head').innerHTML=`
+ <div class="top"><div><h2>${esc(summary.operacao||op.name)}</h2><div style="color:#687586">Relatório consolidado da operação</div></div><span class="badge">${summary.status_operacao==='finished'?'OPERAÇÃO FINALIZADA':'OPERAÇÃO EM ANDAMENTO'}</span></div>
+ <div class="meta"><div><span class="label">Contratante</span><span class="value">${esc(summary.contratante||op.client_name||'-')}</span></div><div><span class="label">Área</span><span class="value">${esc(summary.area||op.area_name||'-')}</span></div><div><span class="label">Data</span><span class="value">${fdate(summary.data_operacao||op.operation_date)}</span></div></div>
+ <div class="stats"><div class="stat"><span>Pessoas</span><strong>${summary.total_pessoas||0}</strong></div><div class="stat"><span>Em campo</span><strong>${summary.em_campo||0}</strong></div><div class="stat"><span>Encerrados</span><strong>${summary.encerrados||0}</strong></div><div class="stat"><span>Distância total</span><strong>${Number(summary.distancia_total_km||0).toFixed(2)} km</strong></div><div class="stat"><span>Pontos GPS</span><strong>${summary.total_pontos_gps||0}</strong></div><div class="stat"><span>Horas de atividade</span><strong>${Number(summary.horas_totais_atividade||0).toFixed(2)} h</strong></div></div>`;
+ const gm=L.map('map').setView([-31.77,-52.34],12);tile(gm);maps.push(gm);const bounds=[];
+ teams.forEach(t=>bounds.push(...draw(gm,t)));if(bounds.length)gm.fitBounds(bounds,{padding:[25,25],maxZoom:17});
+ const rows=document.querySelector('#rows'), individuals=document.querySelector('#individuals');
+ (report||[]).forEach(r=>{
+   rows.insertAdjacentHTML('beforeend',`<tr><td><span class="dot" style="background:${esc(r.cor||'#2563eb')}"></span><strong>${esc(r.pessoa)}</strong></td><td class="status ${r.status_percurso==='EM CAMPO'?'on':'off'}">${esc(r.status_percurso)}</td><td>${r.sessoes}</td><td>${r.pontos_gps}</td><td>${Number(r.distancia_km||0).toFixed(2)} km</td><td>${fhours(r.tempo_minutos)}</td><td>${ftime(r.primeiro_inicio)}</td><td>${ftime(r.ultimo_fim)}</td></tr>`);
+   const id='pm-'+r.team_id.replaceAll('-','');
+   individuals.insertAdjacentHTML('beforeend',`<section class="card person"><div class="person-head"><h3><span class="dot" style="background:${esc(r.cor||'#2563eb')}"></span>${esc(r.pessoa)}</h3><span class="status ${r.status_percurso==='EM CAMPO'?'on':'off'}">${esc(r.status_percurso)}</span></div><div class="person-stats"><div class="person-stat"><span>Distância</span><strong>${Number(r.distancia_km||0).toFixed(2)} km</strong></div><div class="person-stat"><span>Tempo rastreado</span><strong>${fhours(r.tempo_minutos)}</strong></div><div class="person-stat"><span>Sessões</span><strong>${r.sessoes}</strong></div><div class="person-stat"><span>Pontos GPS</span><strong>${r.pontos_gps}</strong></div><div class="person-stat"><span>Início / fim</span><strong>${ftime(r.primeiro_inicio)} / ${ftime(r.ultimo_fim)}</strong></div></div><div class="person-map" id="${id}"></div></section>`);
+   setTimeout(()=>{const pm=L.map(id).setView([-31.77,-52.34],12);tile(pm);maps.push(pm);const team=teams.find(t=>t.id===r.team_id);const pts=team?draw(pm,team):[];if(pts.length)pm.fitBounds(pts,{padding:[22,22],maxZoom:17})},0);
+ });
+ document.querySelector('#loading').hidden=true;document.querySelector('#content').hidden=false;
+ setTimeout(()=>maps.forEach(m=>m.invalidateSize()),150);
+}
+load();
+</script>
+</body>
+</html>
