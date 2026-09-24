@@ -25,7 +25,7 @@ main{max-width:1180px;margin:auto;padding:24px 18px 50px}
 .stat{background:#f7f9fb;border:1px solid #e0e7ec;border-radius:13px;padding:14px;min-height:82px}
 .stat span{display:block;color:var(--muted);font-size:12px;font-weight:700}.stat strong{display:block;font-size:22px;margin-top:7px}
 #map{height:520px;border-radius:13px}
-.section-title{margin:0 0 15px;font-size:20px}
+.section-title{margin:0 0 15px;font-size:20px}.map-note{margin:-7px 0 14px;color:#687586;font-size:13px}.technical-note p{color:#536273;line-height:1.55}.technical-footer{margin-top:22px;padding-top:14px;border-top:1px solid #e0e7ec;color:#7b8794;font-size:12px}
 .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:12px 10px;border-bottom:1px solid #e5eaee;text-align:left;font-size:14px}th{font-size:11px;text-transform:uppercase;color:#667586}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
 .status{font-weight:800;font-size:11px}.on{color:#087849}.off{color:#687586}
@@ -38,7 +38,14 @@ main{max-width:1180px;margin:auto;padding:24px 18px 50px}
 @media(max-width:520px){.top{display:block}.badge{display:inline-block;margin-top:12px}.meta,.person-stats{grid-template-columns:1fr}.head h1{font-size:22px}.logo{width:58px;height:58px}}
 @media print{
  body{background:#fff}.actions{display:none}header{background:#07364c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
- main{max-width:none;padding:12px}.card{box-shadow:none}.person{break-before:page}.leaflet-control-container{display:none}
+ main{max-width:none;padding:12px}.card{box-shadow:none}
+ .general-map-card{break-before:page;break-inside:avoid}
+ .general-map-card #map{height:410px}
+ .summary-card{break-inside:avoid}
+ .person{break-before:page;break-inside:avoid}
+ .person-map{height:350px}
+ .technical-note{break-before:page;break-inside:avoid}
+ .leaflet-control-container{display:none}
 }
 </style>
 </head>
@@ -49,9 +56,17 @@ main{max-width:1180px;margin:auto;padding:24px 18px 50px}
 <div id="loading" class="card loading">Carregando relatório...</div>
 <div id="content" hidden>
 <section class="card" id="head"></section>
-<section class="card"><h2 class="section-title">Mapa geral da operação</h2><div id="map"></div></section>
-<section class="card"><h2 class="section-title">Resumo individual</h2><div class="table-wrap"><table><thead><tr><th>Pessoa</th><th>Status</th><th>Sessões</th><th>Pontos GPS</th><th>Distância</th><th>Tempo</th><th>Início</th><th>Fim</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+<section class="card general-map-card"><h2 class="section-title">Mapa geral da operação</h2><p class="map-note">Percursos registrados por GPS. Cada cor corresponde a uma pessoa da equipe.</p><div id="map"></div></section>
+<section class="card summary-card"><h2 class="section-title">Resumo individual</h2><div class="table-wrap"><table><thead><tr><th>Pessoa</th><th>Status</th><th>Sessões</th><th>Pontos GPS</th><th>Distância</th><th>Tempo</th><th>Início</th><th>Fim</th></tr></thead><tbody id="rows"></tbody></table></div></section>
 <div id="individuals"></div>
+<section class="card technical-note">
+<h2 class="section-title">Informações técnicas do relatório</h2>
+<p>Este documento consolida os registros de localização enviados pelo aplicativo Mapa do Voto durante a operação. Os trajetos são formados a partir dos pontos GPS efetivamente registrados pelos aparelhos.</p>
+<p>A distância é calculada pela soma dos segmentos entre pontos consecutivos de uma mesma sessão de rastreamento. Sessões diferentes não são ligadas artificialmente entre si.</p>
+<p>O tempo de atividade corresponde à soma das durações das sessões de rastreamento. Em operações ainda em andamento, sessões abertas continuam acumulando tempo até o encerramento.</p>
+<p>Oscilações de sinal, disponibilidade de GPS, condições do aparelho e períodos sem conectividade podem influenciar a frequência dos registros. Pontos armazenados offline podem ser sincronizados posteriormente.</p>
+<div class="technical-footer">Mapa do Voto • Relatório técnico de operação em campo • <span id="generatedAt"></span></div>
+</section>
 </div>
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -119,6 +134,8 @@ async function load(){
    individuals.insertAdjacentHTML('beforeend',`<section class="card person"><div class="person-head"><h3><span class="dot" style="background:${esc(r.cor||'#2563eb')}"></span>${esc(r.pessoa)}</h3><span class="status ${r.status_percurso==='EM CAMPO'?'on':'off'}">${esc(r.status_percurso)}</span></div><div class="person-stats"><div class="person-stat"><span>Distância</span><strong>${Number(r.distancia_km||0).toFixed(2)} km</strong></div><div class="person-stat"><span>Tempo rastreado</span><strong>${fhours(r.tempo_minutos)}</strong></div><div class="person-stat"><span>Sessões</span><strong>${r.sessoes}</strong></div><div class="person-stat"><span>Pontos GPS</span><strong>${r.pontos_gps}</strong></div><div class="person-stat"><span>Início / fim</span><strong>${ftime(r.primeiro_inicio)} / ${ftime(r.ultimo_fim)}</strong></div></div><div class="person-map" id="${id}"></div></section>`);
    setTimeout(()=>{const pm=L.map(id).setView([-31.77,-52.34],12);tile(pm);maps.push(pm);const team=teams.find(t=>t.id===r.team_id);const pts=team?draw(pm,team):[];if(pts.length)pm.fitBounds(pts,{padding:[22,22],maxZoom:17})},0);
  });
+ document.querySelector('#generatedAt').textContent =
+ new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
  document.querySelector('#loading').hidden=true;document.querySelector('#content').hidden=false;
  setTimeout(()=>maps.forEach(m=>m.invalidateSize()),150);
 }
