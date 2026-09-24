@@ -48,6 +48,72 @@ main{max-width:1180px;margin:auto;padding:24px 18px 50px}
  .leaflet-control-container{display:none}
 }
 </style>
+
+<style>
+@media print {
+  @page { size: A4 landscape; margin: 9mm; }
+  body { background:#fff !important; }
+  header { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .actions { display:none !important; }
+  main { max-width:none !important; padding:0 !important; }
+
+  /* Page 1: identification/summary only */
+  #head {
+    break-after: page !important;
+    page-break-after: always !important;
+    min-height: 155mm;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+
+  /* Page 2: general map + summary table */
+  .general-map-card {
+    break-before: auto !important;
+    page-break-before: auto !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom:6mm !important;
+  }
+  .general-map-card #map { height: 105mm !important; }
+  .summary-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom:0 !important;
+  }
+  .summary-card + #individuals,
+  #individuals { break-before: page !important; page-break-before: always !important; }
+
+  /* One worker per page */
+  .person {
+    break-before: page !important;
+    page-break-before: always !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    min-height: 175mm;
+  }
+  #individuals .person:first-child {
+    break-before: auto !important;
+    page-break-before: auto !important;
+  }
+  .person-map { height: 125mm !important; }
+
+  /* Final methodology page */
+  .technical-note {
+    break-before: page !important;
+    page-break-before: always !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    min-height:155mm;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .leaflet-control-container { display:none !important; }
+  .card { box-shadow:none !important; }
+}
+</style>
+
 </head>
 <body>
 <header><div class="head"><img class="logo" src="mapa-do-voto-logo.png" alt="Mapa do Voto"><div><h1>MAPA DO VOTO</h1><p>Relatório técnico de operação em campo</p></div></div></header>
